@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>VR Therapeutic Golf World - Medical Assessment Platform</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        font-family: 'Arial', sans-serif;
+      }
+      
+      #game-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        z-index: 1000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        color: white;
+        text-align: center;
+      }
+      
+      #game-overlay.hidden {
+        display: none;
+      }
+      
+      .overlay-content {
+        background: rgba(255,255,255,0.1);
+        padding: 40px;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.2);
+        max-width: 600px;
+        width: 90%;
+      }
+      
+      .esp-status {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 10px;
+        z-index: 100;
+        border: 2px solid #4CAF50;
+      }
+      
+      .esp-status.disconnected {
+        border-color: #F44336;
+        color: #F44336;
+      }
+      
+      .gaze-cursor {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 4px;
+        height: 4px;
+        background: #FFD700;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 50;
+        pointer-events: none;
+        box-shadow: 0 0 10px #FFD700;
+      }
+      
+      .session-timer {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(0,0,0,0.8);
+        color: #FFD700;
+        padding: 15px 25px;
+        border-radius: 15px;
+        font-size: 24px;
+        font-weight: bold;
+        z-index: 100;
+        border: 2px solid #FFD700;
+      }
+      
+      .performance-hud {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        font-size: 14px;
+        z-index: 100;
+        min-width: 200px;
+        max-width: 220px;
+      }
+      
+      .controls-guide {
+        position: fixed;
+        top: 180px;
+        left: 20px;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        font-size: 13px;
+        z-index: 100;
+        min-width: 200px;
+        max-width: 220px;
+        border: 2px solid #2196F3;
+      }
+      
+      .btn {
+        padding: 15px 30px;
+        font-size: 18px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        margin: 10px;
+        background: linear-gradient(45deg, #4CAF50, #45a049);
+        color: white;
+        transition: all 0.3s;
+      }
+      
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      }
+      
+      .btn-secondary {
+        background: linear-gradient(45deg, #2196F3, #1976D2);
+      }
+      
+      #esp-settings {
+        margin: 20px 0;
+        background: rgba(255,255,255,0.1);
+        padding: 20px;
+        border-radius: 10px;
+      }
+      
+      #esp-settings input {
+        padding: 10px;
+        margin: 5px;
+        border-radius: 5px;
+        border: none;
+        width: 200px;
+      }
+      
+      #results-dashboard {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(135deg, #2C3E50, #34495E);
+        z-index: 2000;
+        overflow-y: auto;
+        padding: 20px;
+        display: none;
+        color: white;
+      }
+      
+      .dashboard-header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+      
+      .metric-card {
+        background: rgba(255,255,255,0.1);
+        padding: 20px;
+        border-radius: 15px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.2);
+      }
+      
+      .chart-container {
+        background: rgba(255,255,255,0.95);
+        padding: 20px;
+        border-radius: 15px;
+        margin: 20px 0;
+        color: #333;
+      }
+      
+      .report-actions {
+        text-align: center;
+        margin: 30px 0;
+      }
+      
+      #physician-notes {
+        width: 100%;
+        min-height: 120px;
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.1);
+        color: white;
+        font-family: inherit;
+        resize: vertical;
+      }
+      
+      #physician-notes::placeholder {
+        color: rgba(255,255,255,0.7);
+      }
+      
+      .assessment-score {
+        font-size: 48px;
+        font-weight: bold;
+        color: #4CAF50;
+        text-align: center;
+        margin: 20px 0;
+      }
+      
+      .progress-bar {
+        width: 100%;
+        height: 6px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 3px;
+        overflow: hidden;
+        margin: 8px 0;
+      }
+      
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(45deg, #4CAF50, #45a049);
+        transition: width 0.3s ease;
+      }
+      
+      .gaze-indicator {
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        border: 3px solid #FFD700;
+        border-radius: 50%;
+        background: rgba(255, 215, 0, 0.2);
+        transform: translate(-50%, -50%);
+        display: none;
+        animation: gazeRing 2s ease-in-out infinite;
+      }
+      
+      @keyframes gazeRing {
+        0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; }
+        100% { transform: translate(-50%, -50%) scale(1.3); opacity: 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Gaze Cursor -->
+    <div class="gaze-cursor" id="gaze-cursor"></div>
+    
+    <!-- ESP32 Status -->
+    <div class="esp-status disconnected" id="esp-status">
+      📡 ESP32: Disconnected
+    </div>
+    
+    <!-- Performance HUD - Made smaller -->
+    <div class="performance-hud" id="performance-hud" style="display: none;">
+      <div><strong>🎯 Session Progress</strong></div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="session-progress" style="width: 0%;"></div>
+      </div>
+      <div>⛳ Shots: <span id="shot-count">0</span></div>
+      <div>🎯 Accuracy: <span id="accuracy">0%</span></div>
+      <div>💰 Coins: <span id="coin-count">0</span></div>
+      <div>🏆 Score: <span id="current-score">0</span></div>
+      <div>🌸 Explored: <span id="exploration-distance">0m</span></div>
+    </div>
+
+    <!-- NEW: Controls Guide -->
+    <div class="controls-guide" id="controls-guide" style="display: none;">
+      <div><strong>🎮 ESP32 Controls</strong></div>
+      <div style="margin: 8px 0; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.2);">
+        <div style="color: #4CAF50;">🤖 <strong>Elbow Bend</strong></div>
+        <div style="font-size: 12px; opacity: 0.8;">→ Walk Forward</div>
+      </div>
+      <div style="margin: 8px 0; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.2);">
+        <div style="color: #FFD700;">✋ <strong>Light Finger Flex</strong></div>
+        <div style="font-size: 12px; opacity: 0.8;">→ Collect Coins</div>
+      </div>
+      <div style="margin: 8px 0; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.2);">
+        <div style="color: #E91E63;">👊 <strong>Medium Finger Flex</strong></div>
+        <div style="font-size: 12px; opacity: 0.8;">→ Touch Animals</div>
+      </div>
+      <div style="margin: 8px 0; padding: 4px 0;">
+        <div style="color: #9C27B0;">🏌️ <strong>Elbow + Full Flex</strong></div>
+        <div style="font-size: 12px; opacity: 0.8;">→ Golf Shots</div>
+      </div>
+      <div style="margin-top: 10px; font-size: 11px; opacity: 0.7; text-align: center;">
+        👀 Gaze + Gesture Control
+      </div>
+    </div>
+
+    <!-- Game Start/End Overlay -->
+    <div id="game-overlay">
+      <div class="overlay-content">
+        <h1 id="overlay-title">🏌️ VR Therapeutic Golf World Assessment</h1>
+        <p id="overlay-description">
+          A 10-minute therapeutic VR experience with ESP32 sensor control and gaze interaction.
+          Use elbow and finger movements for natural interaction.
+        </p>
+        
+        <div id="esp-settings">
+          <h3>ESP32 Connection</h3>
+          <input type="text" id="esp-ip" placeholder="ESP32 IP Address (e.g., 192.168.0.129)" value="192.168.0.129">
+          <br>
+          <button id="connect-esp" class="btn btn-secondary" onclick="connectESP32()">📡 Connect to ESP32</button>
+          <div id="connection-status" style="margin-top: 10px; color: #FFD700;"></div>
+        </div>
+        
+        <div id="patient-info" style="margin: 20px 0;">
+          <input type="text" id="patient-name" placeholder="Patient Name" 
+                 style="padding: 10px; margin: 5px; border-radius: 5px; border: none; width: 200px;">
+          <input type="text" id="patient-id" placeholder="Patient ID" 
+                 style="padding: 10px; margin: 5px; border-radius: 5px; border: none; width: 200px;">
+        </div>
+        <button id="start-session" class="btn" onclick="startSession()">🎯 Start 10-Minute Assessment</button>
+        <button id="view-demo" class="btn btn-secondary" onclick="startDemo()">👁️ View Demo Mode</button>
+        <button onclick="alert('JavaScript is working!'); console.log('Test button clicked');" class="btn" style="background: #FF9800;">🧪 Test JS</button>
+      </div>
+    </div>
+
+    <!-- Session Timer -->
+    <div class="session-timer" id="session-timer" style="display: none;">
+      ⏱️ <span id="time-remaining">10:00</span>
+    </div>
+
+    <!-- Results Dashboard -->
+    <div id="results-dashboard">
+      <div class="dashboard-header">
+        <h1>📊 Therapeutic Assessment Results</h1>
+        <div id="patient-summary"></div>
+      </div>
+      
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <h3>🎯 Motor Skills Assessment</h3>
+          <div class="assessment-score" id="motor-score">0</div>
+          <div>Precision & Coordination</div>
+        </div>
+        
+        <div class="metric-card">
+          <h3>🧠 Cognitive Performance</h3>
+          <div class="assessment-score" id="cognitive-score">0</div>
+          <div>Decision Making & Focus</div>
+        </div>
+        
+        <div class="metric-card">
+          <h3>⚡ Reaction Metrics</h3>
+          <div>Avg Response: <span id="avg-reaction">0ms</span></div>
+          <div>Best Response: <span id="best-reaction">0ms</span></div>
+          <div>Consistency: <span id="reaction-consistency">0%</span></div>
+        </div>
+        
+        <div class="metric-card">
+          <h3>🤖 ESP32 Sensor Data</h3>
+          <div>Avg Flex: <span id="avg-flex">0</span></div>
+          <div>Avg IMU Tilt: <span id="avg-imu">0°</span></div>
+          <div>Flex Range: <span id="flex-range">0-0</span></div>
+          <div>IMU Range: <span id="imu-range">0°-0°</span></div>
+        </div>
+        
+        <div class="metric-card">
+          <h3>📈 Session Summary</h3>
+          <div>Duration: <span id="session-duration">10:00</span></div>
+          <div>Total Actions: <span id="total-actions">0</span></div>
+          <div>Engagement: <span id="engagement-level">0%</span></div>
+        </div>
+      </div>
+      
+      <div class="chart-container">
+        <h3>📊 Performance Timeline</h3>
+        <canvas id="performance-chart" width="400" height="200"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>🎯 Accuracy Distribution</h3>
+        <canvas id="accuracy-chart" width="400" height="200"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>🤖 ESP32 Sensor Analysis</h3>
+        <canvas id="sensor-chart" width="400" height="200"></canvas>
+      </div>
+      
+      <div class="metric-card">
+        <h3>📋 Clinical Notes</h3>
+        <textarea id="physician-notes" placeholder="Enter clinical observations, recommendations, or treatment notes..."></textarea>
+      </div>
+      
+      <div class="report-actions">
+        <button onclick="exportPDF()" class="btn">📄 Export PDF Report</button>
+        <button onclick="exportCSV()" class="btn btn-secondary">📊 Export Data CSV</button>
+        <button onclick="newSession()" class="btn" style="background: linear-gradient(45deg, #FF9800, #F57C00);">
+          🔄 New Session
+        </button>
+      </div>
+    </div>
+
+    <!-- VR Scene -->
+    <a-scene vr-mode-ui="enabled: true" 
+             background="color: #87CEEB" 
+             fog="type: exponential; density: 0.0008; color: #87CEEB"
+             renderer="antialias: true; highRefreshRate: true"
+             shadow="type: basic"
+             id="vr-scene"
+             embedded
+             style="height: 100vh; width: 100vw;">
+      
+      <!-- Sky -->
+      <a-sky color="#87CEEB"></a-sky>
+      
+      <!-- Large Ground Circle -->
+      <a-cylinder position="0 -0.1 0" radius="70" height="0.2" 
+                  color="#2E7D32" 
+                  material="roughness: 0.8; metalness: 0.1"
+                  shadow="receive: true"></a-cylinder>
+      
+      <!-- Apartment Building -->
+      <a-entity gltf-model="https://jst0605-coder.github.io/jst/Apartment%202.glb"
+                scale="20 20 20"
+                position="0 3 -55"
+                shadow="cast: true; receive: true"></a-entity>
+      
+      <!-- Cloud -->
+      <a-entity gltf-model="https://jst0605-coder.github.io/jst/cloud.glb"
+                scale="8 8 8"
+                position="0 25 -60"
+                animation="property: position; to: 40 25 -60; dur: 40000; loop: true; dir: alternate">
+      </a-entity>
+      
+      <!-- Birds -->
+      <a-entity gltf-model="https://jst0605-coder.github.io/jst/birds.glb"
+                scale="4 4 4"
+                rotation="0 90 0"
+                position="-40 18 -40"
+                animation="property: position; to: 40 20 -40; dur: 25000; loop: true; dir: alternate">
+      </a-entity>
+      
+      <!-- Magical Entrance Portal -->
+      <a-entity id="entrance-portal" position="0 2 8">
+        <a-torus position="0 0 0" radius-inner="1" radius-outer="1.5" 
+                 color="#9C27B0" 
+                 material="opacity: 0.7; transparent: true; metalness: 0.8; roughness: 0.2"
+                 animation="property: rotation; to: 0 360 0; dur: 8000; loop: true; easing: linear"
+                 shadow="cast: true; receive: true"></a-torus>
+        
+        <a-circle position="0 0 0.1" radius="1" 
+                  color="#E91E63" 
+                  material="opacity: 0.5; transparent: true; shader: flat"
+                  animation="property: scale; to: 1.2 1.2 1.2; dur: 2000; loop: true; dir: alternate; easing: easeInOutQuad"></a-circle>
+      </a-entity>
+      
+      <!-- Environment Trees -->
+      <a-entity id="environment-decorations">
+        <!-- Far North Ring -->
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Big%20Tree.glb" position="0 8 45" scale="6.0 10.0 6.0" shadow="cast: true"></a-entity>
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Big%20Tree.glb" position="25 8 42" scale="5.5 9.5 5.5" shadow="cast: true"></a-entity>
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Big%20Tree.glb" position="-25 8 42" scale="5.5 9.5 5.5" shadow="cast: true"></a-entity>
+        
+        <!-- East Ring -->
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Big%20Tree.glb" position="50 9 0" scale="6.5 11.0 6.5" shadow="cast: true"></a-entity>
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Big%20Tree.glb" position="45 8 20" scale="5.8 9.8 5.8" shadow="cast: true"></a-entity>
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Big%20Tree.glb" position="48 8 -15" scale="6.0 10.0 6.0" shadow="cast: true"></a-entity>
+        
+        <!-- West Ring -->
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Big%20Tree.glb" position="-50 9 0" scale="6.5 11.0 6.5" shadow="cast: true"></a-entity>
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Big%20Tree.glb" position="-45 8 20" scale="5.8 9.8 5.8" shadow="cast: true"></a-entity>
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Big%20Tree.glb" position="-48 8 -15" scale="6.0 10.0 6.0" shadow="cast: true"></a-entity>
+        
+        <!-- South Ring -->
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Big%20Tree.glb" position="20 7 -65" scale="5.5 9.0 5.5" shadow="cast: true"></a-entity>
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Big%20Tree.glb" position="-20 7 -65" scale="5.5 9.0 5.5" shadow="cast: true"></a-entity>
+        
+        <!-- Medium Trees -->
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Big%20Tree.glb" position="12 6 25" scale="4.5 7.5 4.5" shadow="cast: true"></a-entity>
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Big%20Tree.glb" position="-12 6 25" scale="4.5 7.5 4.5" shadow="cast: true"></a-entity>
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Big%20Tree.glb" position="35 6 15" scale="4.8 8.0 4.8" shadow="cast: true"></a-entity>
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Big%20Tree.glb" position="-35 6 15" scale="4.8 8.0 4.8" shadow="cast: true"></a-entity>
+        
+        <!-- Grass patches -->
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Grass%20Patch.glb" position="8 0 30" scale="1.2 1.2 1.2"></a-entity>
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Grass%20Patch.glb" position="-10 0 28" scale="1.0 1.0 1.0"></a-entity>
+        <a-entity gltf-model="https://jst0605-coder.github.io/jst/Grass%20Patch.glb" position="18 0 18" scale="1.1 1.1 1.1"></a-entity>
+      </a-entity>
+      
+      <!-- Scattered Flowers -->
+      <a-entity id="scattered-flowers"></a-entity>
+      
+      <!-- Assessment Animals with AI -->
+      <a-entity id="roaming-animals">
+        <a-entity class="assessment-animal roaming-animal touchable" 
+                  gltf-model="https://jst0605-coder.github.io/jst/Animated%20Animal%20Pack-glb/Fox.glb" 
+                  animation-mixer
+                  position="-20 0 15"
+                  scale="0.8 0.8 0.8" 
+                  shadow="cast: true"
+                  animal-ai="speed: 1.0; wanderRadius: 15; homePosition: -20 0 15">
+        </a-entity>
+        
+        <a-entity class="assessment-animal roaming-animal touchable" 
+                  gltf-model="https://jst0605-coder.github.io/jst/Animated%20Animal%20Pack-glb/Husky.glb" 
+                  animation-mixer
+                  position="22 0 12"
+                  scale="0.9 0.9 0.9" 
+                  shadow="cast: true"
+                  animal-ai="speed: 1.2; wanderRadius: 12; homePosition: 22 0 12">
+        </a-entity>
+        
+        <a-entity class="assessment-animal roaming-animal touchable" 
+                  gltf-model="https://jst0605-coder.github.io/jst/Animated%20Animal%20Pack-glb/Shiba%20Inu.glb" 
+                  animation-mixer
+                  position="25 0 -8"
+                  scale="0.7 0.7 0.7" 
+                  shadow="cast: true"
+                  animal-ai="speed: 1.5; wanderRadius: 10; homePosition: 25 0 -8">
+        </a-entity>
+        
+        <a-entity class="assessment-animal roaming-animal touchable" 
+                  gltf-model="https://jst0605-coder.github.io/jst/Animated%20Animal%20Pack-glb/Horse.glb" 
+                  animation-mixer
+                  position="-25 0 -8"
+                  scale="1.6 1.6 1.6" 
+                  shadow="cast: true"
+                  animal-ai="speed: 1.8; wanderRadius: 15; homePosition: -25 0 -8">
+        </a-entity>
+      </a-entity>
+      
+      <!-- Assessment Coins - Initial placement -->
+      <a-entity id="assessment-coins">
+        <a-entity class="assessment-coin gazeable" position="5 0.1 18">
+          <a-entity gltf-model="https://jst0605-coder.github.io/jst/Coin.glb" 
+                    scale="0.5 0.5 0.5"
+                    animation="property: rotation; to: 0 360 0; dur: 2000; loop: true"
+                    shadow="cast: true"></a-entity>
+        </a-entity>
+        
+        <a-entity class="assessment-coin gazeable" position="-8 0.1 25">
+          <a-entity gltf-model="https://jst0605-coder.github.io/jst/Coin.glb" 
+                    scale="0.5 0.5 0.5"
+                    animation="property: rotation; to: 0 360 0; dur: 1800; loop: true"
+                    shadow="cast: true"></a-entity>
+        </a-entity>
+        
+        <a-entity class="assessment-coin gazeable" position="18 0.1 -5">
+          <a-entity gltf-model="https://jst0605-coder.github.io/jst/Coin.glb" 
+                    scale="0.5 0.5 0.5"
+                    animation="property: rotation; to: 0 360 0; dur: 2200; loop: true"
+                    shadow="cast: true"></a-entity>
+        </a-entity>
+        
+        <a-entity class="assessment-coin gazeable" position="-22 0.1 8">
+          <a-entity gltf-model="https://jst0605-coder.github.io/jst/Coin.glb" 
+                    scale="0.5 0.5 0.5"
+                    animation="property: rotation; to: 0 360 0; dur: 1900; loop: true"
+                    shadow="cast: true"></a-entity>
+        </a-entity>
+        
+        <a-entity class="assessment-coin gazeable" position="30 0.1 25">
+          <a-entity gltf-model="https://jst0605-coder.github.io/jst/Coin.glb" 
+                    scale="0.5 0.5 0.5"
+                    animation="property: rotation; to: 0 360 0; dur: 2100; loop: true"
+                    shadow="cast: true"></a-entity>
+        </a-entity>
+        
+        <a-entity class="assessment-coin gazeable" position="-28 0.1 -12">
+          <a-entity gltf-model="https://jst0605-coder.github.io/jst/Coin.glb" 
+                    scale="0.5 0.5 0.5"
+                    animation="property: rotation; to: 0 360 0; dur: 1700; loop: true"
+                    shadow="cast: true"></a-entity>
+        </a-entity>
+      </a-entity>
+      
+      <!-- EASY GOLF COURSE - Left side -->
+      <a-entity id="easy-golf-course" position="-20 0 -25">
+        <!-- Course borders -->
+        <a-box position="0 0.4 15" depth="2" height="0.8" width="25" 
+               color="#8D6E63" shadow="cast: true; receive: true"></a-box>
+        <a-box position="-12 0.4 7.5" depth="15" height="0.8" width="2" 
+               color="#8D6E63" shadow="cast: true; receive: true"></a-box>
+        <a-box position="12 0.4 7.5" depth="15" height="0.8" width="2" 
+               color="#8D6E63" shadow="cast: true; receive: true"></a-box>
+        <a-box position="0 0.4 0" depth="2" height="0.8" width="25" 
+               color="#8D6E63" shadow="cast: true; receive: true"></a-box>
+        
+        <!-- Tee area -->
+        <a-cylinder position="0 0.08 12" radius="2.5" height="0.15" 
+                    color="#8BC34A" shadow="cast: true; receive: true"></a-cylinder>
+        
+        <!-- Easy ball -->
+        <a-sphere id="easy-ball" class="gazeable golf-ball" position="0 0.2 12" radius="0.15" 
+                  color="#FFFFFF" shadow="cast: true"></a-sphere>
+        
+        <!-- Course fairway -->
+        <a-box position="0 0.05 7.5" width="20" height="0.1" depth="15" 
+               color="#4CAF50" shadow="receive: true"></a-box>
+        
+        <!-- Green area -->
+        <a-cylinder position="0 0.1 3" radius="2.5" height="0.2" 
+                    color="#2E7D32" shadow="cast: true; receive: true"></a-cylinder>
+        
+        <!-- Easy hole -->
+        <a-cylinder id="easy-hole" position="0 0.05 3" radius="0.4" height="0.4" 
+                    color="#000000" shadow="receive: true"></a-cylinder>
+        
+        <!-- Flag -->
+        <a-cylinder position="0 2.5 3" radius="0.05" height="5" color="#4CAF50" shadow="cast: true"></a-cylinder>
+        <a-plane position="0.8 4 3" width="1.6" height="1.2" color="#4CAF50" 
+                 animation="property: rotation; to: 0 15 0; dur: 3000; loop: true; dir: alternate"></a-plane>
+      </a-entity>
+      
+      <!-- CHALLENGING GOLF COURSE - Right side -->
+      <a-entity id="challenging-golf-course" position="20 0 -25">
+        <!-- Course borders -->
+        <a-box position="0 0.6 18" depth="2" height="1.2" width="30" 
+               color="#5D4037" shadow="cast: true; receive: true"></a-box>
+        <a-box position="-15 0.6 9" depth="18" height="1.2" width="2" 
+               color="#5D4037" shadow="cast: true; receive: true"></a-box>
+        <a-box position="15 0.6 9" depth="18" height="1.2" width="2" 
+               color="#5D4037" shadow="cast: true; receive: true"></a-box>
+        <a-box position="0 0.6 0" depth="2" height="1.2" width="30" 
+               color="#5D4037" shadow="cast: true; receive: true"></a-box>
+        
+        <!-- Tee area -->
+        <a-cylinder position="0 0.08 15" radius="3" height="0.15" 
+                    color="#8BC34A" shadow="cast: true; receive: true"></a-cylinder>
+        
+        <!-- Challenging ball -->
+        <a-sphere id="challenging-ball" class="gazeable golf-ball" position="0 0.2 15" radius="0.15" 
+                  color="#FFFFFF" shadow="cast: true"></a-sphere>
+        
+        <!-- Course fairway -->
+        <a-box position="0 0.05 9" width="26" height="0.1" depth="18" 
+               color="#4CAF50" shadow="receive: true"></a-box>
+        
+        <!-- Water hazard -->
+        <a-circle position="0 0.05 9" radius="4" rotation="-90 0 0" 
+                  color="#1976D2" 
+                  material="roughness: 0.1; metalness: 0.3; opacity: 0.8; transparent: true"
+                  animation="property: rotation; to: -90 10 0; dur: 8000; loop: true; easing: linear"></a-circle>
+        
+        <!-- Island in water -->
+        <a-cylinder position="1 0.08 8" radius="1" height="0.16" 
+                    color="#8BC34A" shadow="cast: true; receive: true"></a-cylinder>
+        
+        <!-- Moving windmill obstacle -->
+        <a-entity position="-6 0 12">
+          <a-cylinder radius="0.2" height="4" color="#8D6E63" position="0 2 0" shadow="cast: true"></a-cylinder>
+          <a-entity animation="property: rotation; to: 0 360 0; dur: 2000; loop: true; easing: linear">
+            <a-box width="4" height="0.2" depth="0.2" color="#E53935" position="0 4 0" shadow="cast: true"></a-box>
+            <a-box width="0.2" height="4" depth="0.2" color="#E53935" position="0 4 0" shadow="cast: true"></a-box>
+          </a-entity>
+        </a-entity>
+        
+        <!-- Elevated final green -->
+        <a-cylinder position="0 0.6 3" radius="3" height="1.2" 
+                    color="#2E7D32" shadow="cast: true; receive: true"></a-cylinder>
+        
+        <!-- Challenging hole -->
+        <a-cylinder id="challenging-hole" position="0 0.65 3" radius="0.35" height="0.4" 
+                    color="#000000" shadow="receive: true"></a-cylinder>
+        
+        <!-- Flag -->
+        <a-cylinder position="0 3.5 3" radius="0.05" height="5" color="#E53935" shadow="cast: true"></a-cylinder>
+        <a-plane position="1 5 3" width="2" height="1.5" color="#FF5722" 
+                 animation="property: rotation; to: 0 20 0; dur: 2000; loop: true; dir: alternate"></a-plane>
+        
+        <!-- Sand traps -->
+        <a-circle position="-8 0.01 6" radius="2" rotation="-90 0 0" color="#F4A460" material="roughness: 0.9"></a-circle>
+        <a-circle position="8 0.01 12" radius="1.5" rotation="-90 0 0" color="#F4A460" material="roughness: 0.9"></a-circle>
+      </a-entity>
+      
+      <!-- Course Labels (Removed floating instructions) -->
+      <a-text position="-20 3 -10" 
+              value="🏌️ EASY GOLF COURSE ⬅️&#10;Perfect for beginners!" 
+              color="#FFFFFF" 
+              scale="0.8 0.8 0.8" 
+              align="center"
+              geometry="primitive: plane; width: 6; height: 2"
+              material="color: #4CAF50; opacity: 0.15; transparent: true; metalness: 0.7; roughness: 0.3"></a-text>
+      
+      <a-text position="20 3 -10" 
+              value="⚡ CHALLENGING GOLF ➡️&#10;Advanced coordination!" 
+              color="#FFFFFF" 
+              scale="0.8 0.8 0.8" 
+              align="center"
+              geometry="primitive: plane; width: 6; height: 2"
+              material="color: #E53935; opacity: 0.15; transparent: true; metalness: 0.7; roughness: 0.3"></a-text>
+      
+      <!-- Money Display UI -->
+      <a-text id="money-display" position="0 3 8" 
+              value="💰 Assessment Coins: 0" 
+              color="#FFD700" 
+              scale="1.8 1.8 1.8" 
+              align="center"
+              geometry="primitive: plane; width: 5; height: 1.5"
+              material="color: #1976D2; opacity: 0.85; transparent: true; metalness: 0.6; roughness: 0.4"></a-text>
+      
+      <!-- Lighting -->
+      <a-light type="ambient" color="#404040" intensity="0.5"></a-light>
+      <a-light type="directional" color="#FFF8DC" intensity="1.2" position="20 30 15" 
+               shadow="cast: true; mapSize: 2048 2048"></a-light>
+      <a-light type="point" color="#FFE4B5" intensity="0.4" position="0 12 0"></a-light>
+      
+      <!-- VR Camera Rig with Gaze Controls -->
+      <a-entity id="rig" position="0 1.6 18">
+        <a-camera id="camera" 
+                  look-controls="enabled: true" 
+                  wasd-controls="enabled: true">
+          <a-cursor id="gaze-cursor-vr" 
+                    position="0 0 -1"
+                    geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+                    material="color: #FFD700; opacity: 0.8"
+                    animation__click="property: scale; startEvents: click; easing: easeInCubic; dur: 150; from: 0.1 0.1 0.1; to: 1 1 1"
+                    animation__fusing="property: scale; startEvents: fusing; easing: easeInCubic; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1"
+                    animation__mouseleave="property: scale; startEvents: mouseleave; easing: easeInCubic; dur: 500; to: 1 1 1"
+                    raycaster="objects: .gazeable, .touchable"
+                    fuse="true"
+                    fuseTimeout="2000">
+          </a-cursor>
+        </a-camera>
+      </a-entity>
+      
+    </a-scene>
+
+    <script>
+      // Global variables
+      let esp32WebSocket = null;
+      let therapeuticGolf = null;
+      let esp32Controller = null;
+      let sessionTimer = null;
+      let gameState = 'menu';
+
+      // Simple ESP32 Connection Function
+      function connectESP32() {
+        console.log('🔘 Connect button clicked!');
+        
+        const ipInput = document.getElementById('esp-ip');
+        const statusDiv = document.getElementById('connection-status');
+        const espStatus = document.getElementById('esp-status');
+        
+        const ip = ipInput ? ipInput.value.trim() : '192.168.0.129';
+        
+        if (!ip) {
+          statusDiv.textContent = '❌ Please enter IP address';
+          return;
+        }
+        
+        console.log('🔗 Connecting to:', ip);
+        statusDiv.textContent = `Connecting to ${ip}...`;
+        statusDiv.style.color = '#FFD700';
+        
+        // Close existing connection
+        if (esp32WebSocket) {
+          esp32WebSocket.close();
+        }
+        
+        // Create new WebSocket connection
+        esp32WebSocket = new WebSocket(`ws://${ip}:81/`);
+        
+        esp32WebSocket.onopen = () => {
+          console.log('✅ WebSocket Connected!');
+          statusDiv.textContent = '🟢 Connected successfully!';
+          statusDiv.style.color = '#4CAF50';
+          espStatus.textContent = '📡 ESP32: Connected';
+          espStatus.className = 'esp-status';
+        };
+        
+        esp32WebSocket.onmessage = (event) => {
+          console.log('📩 Received:', event.data);
+          try {
+            const data = JSON.parse(event.data);
+            updateSensorDisplay(data);
+            processGestureData(data);
+          } catch (e) {
+            console.log('Raw data:', event.data);
+          }
+        };
+        
+        esp32WebSocket.onclose = () => {
+          console.log('❌ WebSocket Closed');
+          statusDiv.textContent = '🔴 Disconnected';
+          statusDiv.style.color = '#F44336';
+          espStatus.textContent = '📡 ESP32: Disconnected';
+          espStatus.className = 'esp-status disconnected';
+        };
+        
+        esp32WebSocket.onerror = (error) => {
+          console.error('❌ WebSocket Error:', error);
+          statusDiv.textContent = '⚠️ Connection Error - Check IP and WiFi';
+          statusDiv.style.color = '#F44336';
+          espStatus.textContent = '📡 ESP32: Error';
+          espStatus.className = 'esp-status disconnected';
+        };
+      }
+
+      // Update sensor display
+      function updateSensorDisplay(data) {
+        if (gameState !== 'playing') return;
+        
+        // Sensor status panel has been removed - this function is now simplified
+        // Data processing happens in processGestureData function
+      }
+
+      // Process gesture data for movement and actions
+      function processGestureData(data) {
+        if (gameState !== 'playing' && gameState !== 'demo') return;
+        
+        console.log('🎮 Processing gesture data:', data); // Debug log
+        
+        const { flex, tilt, flexSolenoid, imuSolenoid } = data;
+        if (!flex || tilt === undefined) {
+          console.log('❌ Invalid gesture data - missing flex or tilt');
+          return;
+        }
+        
+        const avgFlex = (flex[0] + flex[1] + flex[2]) / 3;
+        const absTilt = Math.abs(tilt);
+        
+        console.log(`📊 Flex: ${avgFlex.toFixed(1)}, Tilt: ${absTilt.toFixed(1)}, FlexSol: ${flexSolenoid}, IMUSol: ${imuSolenoid}`); // Debug log
+        
+        // Use solenoid triggers from ESP32 for more reliable detection
+        let movementSpeed = 0;
+        let action = 'idle';
+        
+        // IMU trigger = movement
+        if (imuSolenoid === true || absTilt >= 8) {
+          if (flexSolenoid === false && avgFlex < 30) {
+            action = 'walk';
+            movementSpeed = 0.12;
+          } else if (flexSolenoid === true && avgFlex >= 30) {
+            action = 'walk_fast';
+            movementSpeed = 0.2;
+          }
+        }
+        
+        // Flex triggers = actions
+        if (flexSolenoid === true || avgFlex >= 30) {
+          if (avgFlex >= 30 && avgFlex < 50) {
+            action = 'pickup';
+            handlePickupAction();
+          } else if (avgFlex >= 50 && (imuSolenoid === true || absTilt >= 8)) {
+            action = 'golf';
+            handleGolfAction();
+          } else if (avgFlex >= 50) {
+            action = 'touch';
+            handleTouchAction();
+          }
+        }
+        
+        console.log(`🎯 Action: ${action}, Speed: ${movementSpeed}`); // Debug log
+        
+        // Handle movement
+        if (movementSpeed > 0) {
+          movePlayer(movementSpeed);
+          console.log('🚶 Moving player'); // Debug log
+        }
+      }
+
+      // Move player based on gesture
+      function movePlayer(speed) {
+        const camera = document.querySelector('#camera');
+        const rig = document.querySelector('#rig');
+        
+        if (!camera || !rig) return;
+        
+        const rotation = camera.getAttribute('rotation');
+        const position = rig.getAttribute('position');
+        
+        const radians = (rotation.y * Math.PI) / 180;
+        const deltaX = -Math.sin(radians) * speed;
+        const deltaZ = -Math.cos(radians) * speed;
+        
+        const newPosition = {
+          x: position.x + deltaX,
+          y: position.y,
+          z: position.z + deltaZ
+        };
+        
+        // Boundary check
+        const distance = Math.sqrt(newPosition.x * newPosition.x + newPosition.z * newPosition.z);
+        if (distance < 65) {
+          rig.setAttribute('position', newPosition);
+        }
+      }
+
+      // Handle pickup action (collect coins)
+      function handlePickupAction() {
+        console.log('💰 Pickup action triggered!'); // Debug log
+        const coins = document.querySelectorAll('.assessment-coin');
+        const rigPos = document.querySelector('#rig').getAttribute('position');
+        
+        coins.forEach(coin => {
+          if (coin.parentNode) {
+            const coinPos = coin.getAttribute('position');
+            const distance = Math.sqrt(
+              Math.pow(rigPos.x - coinPos.x, 2) + 
+              Math.pow(rigPos.z - coinPos.z, 2)
+            );
+            
+            console.log(`💰 Coin distance: ${distance.toFixed(1)}m`); // Debug log
+            
+            if (distance < 5) {
+              collectCoin(coin);
+              console.log('💰 Coin collected via gesture!'); // Debug log
+            }
+          }
+        });
+      }
+
+      // Handle golf action
+      function handleGolfAction() {
+        console.log('🏌️ Golf action triggered!'); // Debug log
+        const balls = document.querySelectorAll('.golf-ball');
+        const rigPos = document.querySelector('#rig').getAttribute('position');
+        
+        balls.forEach(ball => {
+          const ballPos = ball.getAttribute('position');
+          const ballParent = ball.parentEl.getAttribute('position');
+          
+          const globalBallPos = {
+            x: ballPos.x + ballParent.x,
+            y: ballPos.y + ballParent.y,
+            z: ballPos.z + ballParent.z
+          };
+          
+          const distance = Math.sqrt(
+            Math.pow(rigPos.x - globalBallPos.x, 2) + 
+            Math.pow(rigPos.z - globalBallPos.z, 2)
+          );
+          
+          console.log(`🏌️ Ball distance: ${distance.toFixed(1)}m`); // Debug log
+          
+          if (distance < 10) {
+            hitGolfBall(ball);
+            console.log('🏌️ Golf ball hit via gesture!'); // Debug log
+          }
+        });
+      }
+
+      // Handle touch action
+      function handleTouchAction() {
+        console.log('🤏 Touch action triggered!'); // Debug log
+        const animals = document.querySelectorAll('.touchable');
+        const rigPos = document.querySelector('#rig').getAttribute('position');
+        
+        animals.forEach(animal => {
+          const animalPos = animal.getAttribute('position');
+          const distance = Math.sqrt(
+            Math.pow(rigPos.x - animalPos.x, 2) + 
+            Math.pow(rigPos.z - animalPos.z, 2)
+          );
+          
+          console.log(`🐾 Animal distance: ${distance.toFixed(1)}m`); // Debug log
+          
+          if (distance < 8) {
+            touchAnimal(animal);
+            console.log('🐾 Animal touched via gesture!'); // Debug log
+          }
+        });
+      }
+
+      // Session Management Functions
+      function startSession() {
+        const patientName = document.getElementById('patient-name').value.trim();
+        const patientId = document.getElementById('patient-id').value.trim();
+        
+        if (!patientName || !patientId) {
+          alert('Please enter patient name and ID before starting the session.');
+          return;
+        }
+        
+        console.log(`🎯 Starting session for ${patientName} (ID: ${patientId})`);
+        
+        // Initialize therapeutic golf system
+        initializeTherapeuticGolf(patientName, patientId);
+        
+        // Hide overlay and show game
+        document.getElementById('game-overlay').classList.add('hidden');
+        document.getElementById('session-timer').style.display = 'block';
+        document.getElementById('performance-hud').style.display = 'block';
+        document.getElementById('controls-guide').style.display = 'block';
+        
+        gameState = 'playing';
+        startSessionTimer();
+        
+        // Initialize flowers and assessment elements
+        setTimeout(() => {
+          initializeScatteredFlowers();
+          spawnAssessmentCoins();
+        }, 1000);
+      }
+
+      function startDemo() {
+        console.log('👁️ Demo mode started');
+        
+        document.getElementById('game-overlay').classList.add('hidden');
+        document.getElementById('session-timer').style.display = 'block';
+        document.getElementById('performance-hud').style.display = 'block';
+        document.getElementById('controls-guide').style.display = 'block';
+        
+        gameState = 'demo';
+        
+        setTimeout(() => {
+          initializeScatteredFlowers();
+        }, 1000);
+      }
+
+      function newSession() {
+        // Reset everything
+        gameState = 'menu';
+        if (sessionTimer) {
+          clearInterval(sessionTimer);
+        }
+        
+        // Hide results and show overlay
+        document.getElementById('results-dashboard').style.display = 'none';
+        document.getElementById('game-overlay').classList.remove('hidden');
+        
+        // Reset form
+        document.getElementById('patient-name').value = '';
+        document.getElementById('patient-id').value = '';
+        
+        // Reset HUD displays
+        document.getElementById('session-timer').style.display = 'none';
+        document.getElementById('performance-hud').style.display = 'none';
+        document.getElementById('controls-guide').style.display = 'none';
+        
+        console.log('🔄 New session initialized');
+      }
+
+      // Initialize therapeutic golf system
+      function initializeTherapeuticGolf(patientName, patientId) {
+        therapeuticGolf = {
+          sessionData: {
+            patientName: patientName,
+            patientId: patientId,
+            startTime: new Date(),
+            totalShots: 0,
+            successfulShots: 0,
+            coinsCollected: 0,
+            animalInteractions: 0,
+            explorationDistance: 0,
+            flowersDiscovered: 0,
+            reactionTimes: [],
+            performanceTimeline: []
+          }
+        };
+        
+        console.log('🏥 Therapeutic Golf System initialized');
+      }
+
+      // Session timer
+      function startSessionTimer() {
+        let timeRemaining = 600; // 10 minutes
+        const timerDisplay = document.getElementById('time-remaining');
+        const progressBar = document.getElementById('session-progress');
+        
+        sessionTimer = setInterval(() => {
+          timeRemaining--;
+          
+          const minutes = Math.floor(timeRemaining / 60);
+          const seconds = timeRemaining % 60;
+          timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          
+          // Update progress bar
+          const progress = ((600 - timeRemaining) / 600) * 100;
+          progressBar.style.width = `${progress}%`;
+          
+          if (timeRemaining <= 0) {
+            endSession();
+          }
+        }, 1000);
+      }
+
+      // End session and show results
+      function endSession() {
+        if (sessionTimer) {
+          clearInterval(sessionTimer);
+        }
+        
+        gameState = 'finished';
+        
+        // Hide game elements
+        document.getElementById('session-timer').style.display = 'none';
+        document.getElementById('performance-hud').style.display = 'none';
+        document.getElementById('controls-guide').style.display = 'none';
+        
+        // Show results
+        showResults();
+      }
+
+      // Show results dashboard
+      function showResults() {
+        const dashboard = document.getElementById('results-dashboard');
+        dashboard.style.display = 'block';
+        
+        if (therapeuticGolf) {
+          // Populate patient summary
+          document.getElementById('patient-summary').innerHTML = `
+            <h2>Patient: ${therapeuticGolf.sessionData.patientName}</h2>
+            <p>ID: ${therapeuticGolf.sessionData.patientId} | Date: ${therapeuticGolf.sessionData.startTime.toLocaleDateString()}</p>
+            <p>ESP32 Connected: ${esp32WebSocket && esp32WebSocket.readyState === WebSocket.OPEN ? '✅ Yes' : '❌ No'}</p>
+          `;
+          
+          // Calculate and display scores
+          const motorScore = Math.min(100, therapeuticGolf.sessionData.successfulShots * 20 + therapeuticGolf.sessionData.coinsCollected * 5);
+          const cognitiveScore = Math.min(100, therapeuticGolf.sessionData.animalInteractions * 15 + therapeuticGolf.sessionData.flowersDiscovered * 10);
+          
+          document.getElementById('motor-score').textContent = motorScore;
+          document.getElementById('cognitive-score').textContent = cognitiveScore;
+          
+          // Update other metrics
+          document.getElementById('session-duration').textContent = '10:00';
+          document.getElementById('total-actions').textContent = 
+            therapeuticGolf.sessionData.totalShots + therapeuticGolf.sessionData.coinsCollected + 
+            therapeuticGolf.sessionData.animalInteractions + therapeuticGolf.sessionData.flowersDiscovered;
+          document.getElementById('engagement-level').textContent = `${cognitiveScore}%`;
+        }
+      }
+
+      // Game interaction functions
+      function collectCoin(coin) {
+        if (!coin || !coin.parentNode || gameState !== 'playing') return;
+        
+        // Remove coin with animation
+        coin.setAttribute('animation__collect', {
+          property: 'position',
+          to: `${coin.getAttribute('position').x} 3 ${coin.getAttribute('position').z}`,
+          dur: 800
+        });
+        
+        coin.setAttribute('animation__shrink', {
+          property: 'scale',
+          to: '0 0 0',
+          dur: 800
+        });
+        
+        setTimeout(() => {
+          if (coin.parentNode) {
+            coin.parentNode.removeChild(coin);
+          }
+        }, 800);
+        
+        // Update score
+        if (therapeuticGolf) {
+          therapeuticGolf.sessionData.coinsCollected++;
+          updateHUD();
+        }
+        
+        console.log('💰 Coin collected!');
+        
+        // Spawn new coin
+        setTimeout(() => {
+          if (gameState === 'playing') {
+            spawnNewCoin();
+          }
+        }, 3000);
+      }
+
+      function hitGolfBall(ball) {
+        if (!ball || gameState !== 'playing') return;
+        
+        // Simple golf ball animation
+        ball.setAttribute('animation__hit', {
+          property: 'position',
+          to: `${ball.getAttribute('position').x + (Math.random() - 0.5) * 10} 2 ${ball.getAttribute('position').z - 5}`,
+          dur: 2000
+        });
+        
+        if (therapeuticGolf) {
+          therapeuticGolf.sessionData.totalShots++;
+          // Simple success chance
+          if (Math.random() > 0.3) {
+            therapeuticGolf.sessionData.successfulShots++;
+          }
+          updateHUD();
+        }
+        
+        console.log('🏌️ Golf ball hit!');
+        
+        // Reset ball after animation
+        setTimeout(() => {
+          ball.setAttribute('position', '0 0.2 12');
+        }, 3000);
+      }
+
+      function touchAnimal(animal) {
+        if (!animal || gameState !== 'playing') return;
+        
+        // Animal interaction animation
+        animal.setAttribute('animation__touch', {
+          property: 'scale',
+          to: '1.1 1.1 1.1',
+          dur: 300,
+          dir: 'alternate',
+          loop: 2
+        });
+        
+        if (therapeuticGolf) {
+          therapeuticGolf.sessionData.animalInteractions++;
+          updateHUD();
+        }
+        
+        console.log('🐾 Animal touched!');
+      }
+
+      // Update HUD display
+      function updateHUD() {
+        if (!therapeuticGolf || gameState !== 'playing') return;
+        
+        document.getElementById('shot-count').textContent = therapeuticGolf.sessionData.totalShots;
+        document.getElementById('accuracy').textContent = 
+          therapeuticGolf.sessionData.totalShots > 0 ? 
+          Math.round((therapeuticGolf.sessionData.successfulShots / therapeuticGolf.sessionData.totalShots) * 100) + '%' : '0%';
+        document.getElementById('coin-count').textContent = therapeuticGolf.sessionData.coinsCollected;
+        document.getElementById('current-score').textContent = 
+          (therapeuticGolf.sessionData.successfulShots * 10) + 
+          (therapeuticGolf.sessionData.coinsCollected * 5) + 
+          (therapeuticGolf.sessionData.animalInteractions * 8);
+        document.getElementById('exploration-distance').textContent = Math.round(therapeuticGolf.sessionData.explorationDistance) + 'm';
+        
+        // Update money display
+        const moneyDisplay = document.getElementById('money-display');
+        if (moneyDisplay) {
+          moneyDisplay.setAttribute('value', `💰 Assessment Coins: ${therapeuticGolf.sessionData.coinsCollected}`);
+        }
+      }
+
+     function spawnNewCoin() {
+       const coinsContainer = document.getElementById('assessment-coins');
+       if (!coinsContainer) return;
+       
+       // Random position within bounds, avoiding golf courses
+       const angle = Math.random() * Math.PI * 2;
+       const distance = 15 + Math.random() * 35;
+       let x = Math.cos(angle) * distance;
+       let z = Math.sin(angle) * distance;
+       
+       // Avoid golf course areas
+       if (z < -10 && z > -40) {
+         if (Math.abs(x - 20) < 20 || Math.abs(x + 20) < 20) {
+           z = z < -25 ? -45 : -5;
+         }
+       }
+       
+       const coinContainer = document.createElement('a-entity');
+       coinContainer.setAttribute('class', 'assessment-coin gazeable');
+       coinContainer.setAttribute('position', `${x} 0.1 ${z}`);
+       
+       const gltfModel = document.createElement('a-entity');
+       gltfModel.setAttribute('gltf-model', 'https://jst0605-coder.github.io/jst/Coin.glb');
+       gltfModel.setAttribute('scale', '0.6 0.6 0.6');
+       gltfModel.setAttribute('shadow', 'cast: true');
+       gltfModel.setAttribute('animation', {
+         property: 'rotation',
+         to: '0 360 0',
+         dur: 2000,
+         loop: true
+       });
+       
+       coinContainer.appendChild(gltfModel);
+       coinsContainer.appendChild(coinContainer);
+       
+       // Spawn effect
+       coinContainer.setAttribute('scale', '0 0 0');
+       coinContainer.setAttribute('animation__spawn', {
+         property: 'scale',
+         to: '1 1 1',
+         dur: 600,
+         easing: 'easeOutBounce'
+       });
+       
+       console.log(`💰 New coin spawned at (${x.toFixed(1)}, ${z.toFixed(1)})`);
+     }
+
+     // Spawn initial assessment coins
+     function spawnAssessmentCoins() {
+       console.log('💰 Spawning initial assessment coins');
+       
+       // Spawn 3-5 additional coins during gameplay
+       const coinsToSpawn = 3 + Math.floor(Math.random() * 3);
+       
+       for (let i = 0; i < coinsToSpawn; i++) {
+         setTimeout(() => {
+           spawnNewCoin();
+         }, i * 2000);
+       }
+     }
+
+     // Initialize scattered flowers
+     function initializeScatteredFlowers() {
+       const flowerModels = [
+         "https://jst0605-coder.github.io/jst/daisy_pink_flower_bush.glb",
+         "https://jst0605-coder.github.io/jst/orange_pincushion_flower.glb",
+         "https://jst0605-coder.github.io/jst/spring_lungwort_flowering_plants.glb"
+       ];
+       
+       const numFlowers = 25;
+       const flowersParent = document.getElementById("scattered-flowers");
+       
+       if (!flowersParent) {
+         console.error('Flowers container not found');
+         return;
+       }
+       
+       // Define areas to avoid
+       const avoidZones = [
+         { x: -20, z: -25, radius: 18 }, // Easy golf course
+         { x: 20, z: -25, radius: 20 },  // Challenging golf course
+         { x: 0, z: 8, radius: 8 },      // Portal area
+         { x: 0, z: 18, radius: 12 }     // Starting area
+       ];
+       
+       const placedFlowers = [];
+       let attempts = 0;
+       const maxAttempts = 200;
+       
+       console.log('🌸 Starting flower placement...');
+       
+       while (placedFlowers.length < numFlowers && attempts < maxAttempts) {
+         attempts++;
+         
+         const x = (Math.random() - 0.5) * 100;
+         const z = (Math.random() - 0.5) * 80;
+         
+         let tooClose = false;
+         
+         // Check avoid zones
+         for (const zone of avoidZones) {
+           const distance = Math.sqrt(Math.pow(x - zone.x, 2) + Math.pow(z - zone.z, 2));
+           if (distance < zone.radius) {
+             tooClose = true;
+             break;
+           }
+         }
+         
+         // Check distance from other flowers
+         if (!tooClose) {
+           for (const existing of placedFlowers) {
+             const distance = Math.sqrt(Math.pow(x - existing.x, 2) + Math.pow(z - existing.z, 2));
+             if (distance < 6) {
+               tooClose = true;
+               break;
+             }
+           }
+         }
+         
+         // Check boundaries
+         if (Math.abs(x) > 45 || Math.abs(z) > 35) {
+           tooClose = true;
+         }
+         
+         if (!tooClose) {
+           const flower = document.createElement("a-entity");
+           flower.setAttribute("gltf-model", flowerModels[placedFlowers.length % flowerModels.length]);
+           flower.setAttribute("class", "discoverable-flower gazeable");
+           
+           const y = 0.1;
+           flower.setAttribute("position", `${x.toFixed(2)} ${y} ${z.toFixed(2)}`);
+           
+           const scale = (Math.random() * 1.5 + 1.0).toFixed(2);
+           flower.setAttribute("scale", `${scale} ${scale} ${scale}`);
+           
+           const rotation = Math.random() * 360;
+           flower.setAttribute("rotation", `0 ${rotation.toFixed(2)} 0`);
+           
+           const swayDuration = 4000 + Math.random() * 4000;
+           const swayAmount = 5 + Math.random() * 10;
+           flower.setAttribute("animation__sway", {
+             property: "rotation",
+             to: `0 ${(rotation + swayAmount).toFixed(2)} 0`,
+             dur: swayDuration,
+             loop: true,
+             dir: "alternate",
+             easing: "easeInOutSine"
+           });
+           
+           flower.setAttribute("shadow", "cast: true");
+           
+           flowersParent.appendChild(flower);
+           placedFlowers.push({ x, z });
+           
+           console.log(`🌸 Placed flower ${placedFlowers.length} at (${x.toFixed(1)}, ${z.toFixed(1)})`);
+         }
+       }
+       
+       console.log(`🌸 Successfully scattered ${placedFlowers.length} flowers!`);
+     }
+
+     // Export functions
+     function exportPDF() {
+       if (!therapeuticGolf) {
+         alert('No session data to export');
+         return;
+       }
+       
+       console.log('📄 Exporting PDF report...');
+       
+       // Create a simple text-based report
+       const reportData = `
+VR Therapeutic Golf Assessment Report
+====================================
+
+Patient Information:
+- Name: ${therapeuticGolf.sessionData.patientName}
+- ID: ${therapeuticGolf.sessionData.patientId}
+- Date: ${therapeuticGolf.sessionData.startTime.toLocaleDateString()}
+- Time: ${therapeuticGolf.sessionData.startTime.toLocaleTimeString()}
+
+Session Results:
+- Duration: 10 minutes
+- Total Shots: ${therapeuticGolf.sessionData.totalShots}
+- Successful Shots: ${therapeuticGolf.sessionData.successfulShots}
+- Accuracy: ${therapeuticGolf.sessionData.totalShots > 0 ? Math.round((therapeuticGolf.sessionData.successfulShots / therapeuticGolf.sessionData.totalShots) * 100) : 0}%
+- Coins Collected: ${therapeuticGolf.sessionData.coinsCollected}
+- Animal Interactions: ${therapeuticGolf.sessionData.animalInteractions}
+- Flowers Discovered: ${therapeuticGolf.sessionData.flowersDiscovered}
+
+ESP32 Connection: ${esp32WebSocket && esp32WebSocket.readyState === WebSocket.OPEN ? 'Connected' : 'Not Connected'}
+
+Clinical Notes:
+${document.getElementById('physician-notes').value || 'No notes provided'}
+       `;
+       
+       // Create and download the report
+       const blob = new Blob([reportData], { type: 'text/plain' });
+       const url = URL.createObjectURL(blob);
+       const a = document.createElement('a');
+       a.href = url;
+       a.download = `VR_Golf_Report_${therapeuticGolf.sessionData.patientId}_${new Date().toISOString().split('T')[0]}.txt`;
+       document.body.appendChild(a);
+       a.click();
+       document.body.removeChild(a);
+       URL.revokeObjectURL(url);
+       
+       console.log('📄 PDF report exported successfully');
+     }
+
+     function exportCSV() {
+       if (!therapeuticGolf) {
+         alert('No session data to export');
+         return;
+       }
+       
+       console.log('📊 Exporting CSV data...');
+       
+       const csvData = [
+         ['Metric', 'Value'],
+         ['Patient Name', therapeuticGolf.sessionData.patientName],
+         ['Patient ID', therapeuticGolf.sessionData.patientId],
+         ['Date', therapeuticGolf.sessionData.startTime.toLocaleDateString()],
+         ['Time', therapeuticGolf.sessionData.startTime.toLocaleTimeString()],
+         ['Total Shots', therapeuticGolf.sessionData.totalShots],
+         ['Successful Shots', therapeuticGolf.sessionData.successfulShots],
+         ['Accuracy (%)', therapeuticGolf.sessionData.totalShots > 0 ? Math.round((therapeuticGolf.sessionData.successfulShots / therapeuticGolf.sessionData.totalShots) * 100) : 0],
+         ['Coins Collected', therapeuticGolf.sessionData.coinsCollected],
+         ['Animal Interactions', therapeuticGolf.sessionData.animalInteractions],
+         ['Flowers Discovered', therapeuticGolf.sessionData.flowersDiscovered],
+         ['ESP32 Connected', esp32WebSocket && esp32WebSocket.readyState === WebSocket.OPEN ? 'Yes' : 'No']
+       ];
+       
+       const csvContent = csvData.map(row => row.join(',')).join('\n');
+       
+       const blob = new Blob([csvContent], { type: 'text/csv' });
+       const url = URL.createObjectURL(blob);
+       const a = document.createElement('a');
+       a.href = url;
+       a.download = `VR_Golf_Data_${therapeuticGolf.sessionData.patientId}_${new Date().toISOString().split('T')[0]}.csv`;
+       document.body.appendChild(a);
+       a.click();
+       document.body.removeChild(a);
+       URL.revokeObjectURL(url);
+       
+       console.log('📊 CSV data exported successfully');
+     }
+
+     // Animal AI Component
+     AFRAME.registerComponent('animal-ai', {
+       schema: {
+         speed: { type: 'number', default: 1.0 },
+         wanderRadius: { type: 'number', default: 15 },
+         homePosition: { type: 'string', default: '0 0 0' }
+       },
+       
+       init: function () {
+         const homePos = this.data.homePosition.split(' ');
+         this.homePosition = {
+           x: parseFloat(homePos[0]),
+           y: parseFloat(homePos[1]),
+           z: parseFloat(homePos[2])
+         };
+         
+         this.currentTarget = null;
+         this.isMoving = false;
+         this.pauseTime = 0;
+         this.movementSpeed = this.data.speed;
+         this.updateInterval = 100;
+         this.lastUpdate = 0;
+         
+         this.setNewWanderTarget();
+       },
+       
+       setNewWanderTarget: function() {
+         const angle = Math.random() * Math.PI * 2;
+         const distance = Math.random() * this.data.wanderRadius;
+         
+         this.currentTarget = {
+           x: this.homePosition.x + Math.cos(angle) * distance,
+           y: this.homePosition.y,
+           z: this.homePosition.z + Math.sin(angle) * distance
+         };
+         
+         const maxBounds = 50;
+         this.currentTarget.x = Math.max(-maxBounds, Math.min(maxBounds, this.currentTarget.x));
+         this.currentTarget.z = Math.max(-maxBounds, Math.min(maxBounds, this.currentTarget.z));
+         
+         // Avoid golf course areas
+         if (this.currentTarget.z < -10 && this.currentTarget.z > -40) {
+           if (Math.abs(this.currentTarget.x - 20) < 18 || Math.abs(this.currentTarget.x + 20) < 18) {
+             this.currentTarget.z = this.currentTarget.z < -25 ? -45 : -5;
+           }
+         }
+         
+         this.isMoving = true;
+         this.pauseTime = 0;
+       },
+       
+       tick: function(time, timeDelta) {
+         if (time - this.lastUpdate < this.updateInterval) {
+           return;
+         }
+         this.lastUpdate = time;
+         
+         if (this.pauseTime > 0) {
+           this.pauseTime -= timeDelta;
+           if (this.pauseTime <= 0) {
+             this.setNewWanderTarget();
+           }
+           return;
+         }
+         
+         if (this.isMoving && this.currentTarget) {
+           const currentPos = this.el.getAttribute('position');
+           
+           const dx = this.currentTarget.x - currentPos.x;
+           const dz = this.currentTarget.z - currentPos.z;
+           const distance = Math.sqrt(dx * dx + dz * dz);
+           
+           if (distance < 1.5) {
+             this.isMoving = false;
+             this.pauseTime = 3000 + Math.random() * 4000;
+           } else {
+             const moveDistance = (this.movementSpeed * timeDelta) / 1000;
+             const normalizedDx = (dx / distance) * moveDistance;
+             const normalizedDz = (dz / distance) * moveDistance;
+             
+             const newPosition = {
+               x: currentPos.x + normalizedDx,
+               y: currentPos.y,
+               z: currentPos.z + normalizedDz
+             };
+             
+             this.el.setAttribute('position', newPosition);
+             
+             const rotation = Math.atan2(dx, dz) * 180 / Math.PI;
+             this.el.setAttribute('rotation', `0 ${rotation} 0`);
+           }
+         }
+       }
+     });
+
+     // Initialize everything when page loads
+     document.addEventListener('DOMContentLoaded', function() {
+       console.log('🚀 VR Therapeutic Golf World loaded successfully!');
+       console.log('');
+       console.log('🤖 ESP32 INTEGRATION READY:');
+       console.log('  • Click "Connect to ESP32" to establish connection');
+       console.log('  • Use gesture controls for natural interaction');
+       console.log('  • Gaze + gestures for enhanced assessment');
+       console.log('');
+       console.log('🎮 CONTROLS:');
+       console.log('  • 👀 GAZE: Look at objects to target');
+       console.log('  • 🤖 ELBOW BEND: Walk forward');
+       console.log('  • ✋ FINGER FLEX: Collect coins');
+       console.log('  • 🏌️ ELBOW + FULL FLEX: Golf shots');
+       console.log('  • 🐾 FINGER FLEX: Touch animals');
+       console.log('');
+       console.log('Ready to start therapeutic assessment!');
+       
+       // Simplified mobile VR support
+       if (/Android|iPhone|iPad/.test(navigator.userAgent)) {
+         console.log('📱 Mobile device detected - VR mode enabled');
+         
+         // Simple VR mode detection
+         const scene = document.querySelector('a-scene');
+         if (scene) {
+           scene.addEventListener('enter-vr', () => {
+             console.log('🥽 VR mode activated');
+             gameState = gameState; // Maintain current state
+           });
+           
+           scene.addEventListener('exit-vr', () => {
+             console.log('👁️ VR mode deactivated');
+           });
+         }
+         
+         // iOS device orientation permission (simplified)
+         if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+           console.log('🔐 iOS detected - will request permission on first interaction');
+           
+           let permissionRequested = false;
+           document.addEventListener('touchstart', function requestPermissionOnce() {
+             if (!permissionRequested) {
+               permissionRequested = true;
+               DeviceOrientationEvent.requestPermission()
+                 .then(response => {
+                   console.log('📱 Device orientation permission:', response);
+                 })
+                 .catch(console.error);
+               document.removeEventListener('touchstart', requestPermissionOnce);
+             }
+           });
+         }
+       }
+       
+       // Test ESP32 connection functionality
+       window.testESP32 = function() {
+         console.log('🧪 Testing ESP32 connection...');
+         if (esp32WebSocket && esp32WebSocket.readyState === WebSocket.OPEN) {
+           console.log('✅ ESP32 WebSocket is connected and ready');
+           esp32WebSocket.send(JSON.stringify({ type: 'test', message: 'VR Game Test' }));
+         } else {
+           console.log('❌ ESP32 WebSocket not connected');
+           console.log('💡 Make sure to:');
+           console.log('  1. Connect ESP32 to WiFi');
+           console.log('  2. Enter correct IP address');
+           console.log('  3. Click "Connect to ESP32" button');
+         }
+       };
+       
+       // Add keyboard controls for testing without ESP32
+       document.addEventListener('keydown', (e) => {
+         if (gameState !== 'playing' && gameState !== 'demo') return;
+         
+         console.log('⌨️ Keyboard input:', e.key);
+         
+         // Test movement with arrow keys
+         const speed = 0.15;
+         switch(e.key) {
+           case 'ArrowUp':
+           case 'w':
+           case 'W':
+             movePlayer(speed);
+             console.log('🚶 Walking forward (keyboard)');
+             break;
+           case 'c':
+           case 'C':
+             handlePickupAction();
+             console.log('💰 Collect coins (keyboard)');
+             break;
+           case 'g':
+           case 'G':
+             handleGolfAction();
+             console.log('🏌️ Golf action (keyboard)');
+             break;
+           case 't':
+           case 'T':
+             handleTouchAction();
+             console.log('🐾 Touch animals (keyboard)');
+             break;
+         }
+       });
+       
+       console.log('⌨️ Keyboard controls enabled for testing:');
+       console.log('  • W/Arrow Up: Walk forward');
+       console.log('  • C: Collect coins');
+       console.log('  • G: Golf action');
+       console.log('  • T: Touch animals');
+     });
+
+     // Continuous coin spawning during assessment
+     setInterval(() => {
+       if (gameState === 'playing') {
+         const existingCoins = document.querySelectorAll('.assessment-coin').length;
+         if (existingCoins < 6) {
+           spawnNewCoin();
+         }
+       }
+     }, 10000);
+
+     // Keep WebSocket connection alive
+     setInterval(() => {
+       if (esp32WebSocket && esp32WebSocket.readyState === WebSocket.OPEN) {
+         try {
+           esp32WebSocket.send(JSON.stringify({ type: 'ping' }));
+         } catch (error) {
+           console.log('WebSocket ping failed:', error);
+         }
+       }
+     }, 30000);
+
+     // Track activity and engagement
+     let lastActivity = Date.now();
+     
+     document.addEventListener('mousemove', () => { lastActivity = Date.now(); });
+     document.addEventListener('keydown', () => { lastActivity = Date.now(); });
+     document.addEventListener('click', () => { lastActivity = Date.now(); });
+     
+     // Monitor idle time
+     setInterval(() => {
+       if (gameState === 'playing' && therapeuticGolf) {
+         const idleTime = Date.now() - lastActivity;
+         if (idleTime > 5000) { // 5 seconds of no activity
+           therapeuticGolf.sessionData.idleTime = (therapeuticGolf.sessionData.idleTime || 0) + 1000;
+         }
+       }
+     }, 1000);
+
+   </script>
+ </body>
+</html>
