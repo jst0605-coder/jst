@@ -302,13 +302,12 @@
     </div>
 
     <!-- VR Scene -->
-    <a-scene vr-mode-ui="enabled: true" 
+    <a-scene vr-mode-ui="enabled: true; enterVRButton: #vr-button; enterARButton: #ar-button" 
              background="color: #87CEEB" 
              fog="type: exponential; density: 0.0008; color: #87CEEB"
              renderer="antialias: true; highRefreshRate: true"
              shadow="type: basic"
              id="vr-scene"
-             embedded
              style="height: 100vh; width: 100vw;">
       
       <!-- Sky -->
@@ -814,7 +813,7 @@
           esp32WebSocket.close();
         }
         
-        esp32WebSocket = new WebSocket(`ws://${ip}:3000/`);
+        esp32WebSocket = new WebSocket("wss://f848d99f2e3a.ngrok-free.app");
         
         esp32WebSocket.onopen = () => {
           statusDiv.textContent = '🟢 Connected successfully!';
