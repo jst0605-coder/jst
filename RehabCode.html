@@ -2,10 +2,9 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>VR Therapeutic Golf World - Medical Assessment Platform</title>
+    <title>VR Therapeutic Golf World (5 Minutes)</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
       body {
         margin: 0;
@@ -133,11 +132,23 @@
         background: rgba(255, 215, 0, 0.2);
         animation: golfPulse 2s infinite;
       }
+
+      .mode-indicator.waiting-walk {
+        border-color: #FF9800;
+        background: rgba(255, 152, 0, 0.2);
+        animation: waitingPulse 2s infinite;
+      }
       
       @keyframes golfPulse {
         0% { box-shadow: 0 0 5px #FFD700; }
         50% { box-shadow: 0 0 20px #FFD700; }
         100% { box-shadow: 0 0 5px #FFD700; }
+      }
+
+      @keyframes waitingPulse {
+        0% { box-shadow: 0 0 5px #FF9800; }
+        50% { box-shadow: 0 0 20px #FF9800; }
+        100% { box-shadow: 0 0 5px #FF9800; }
       }
       
       /* Hide HUD elements in VR mode */
@@ -182,84 +193,6 @@
         width: 200px;
       }
       
-      #results-dashboard {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: linear-gradient(135deg, #2C3E50, #34495E);
-        z-index: 2000;
-        overflow-y: auto;
-        padding: 20px;
-        display: none;
-        color: white;
-      }
-      
-      .dashboard-header {
-        text-align: center;
-        margin-bottom: 30px;
-      }
-      
-      .metrics-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-        gap: 20px;
-        margin-bottom: 30px;
-      }
-      
-      .metric-card {
-        background: rgba(255,255,255,0.1);
-        padding: 20px;
-        border-radius: 15px;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255,255,255,0.2);
-      }
-      
-      .chart-container {
-        background: rgba(255,255,255,0.95);
-        padding: 20px;
-        border-radius: 15px;
-        margin: 20px 0;
-        color: #333;
-      }
-      
-      .charts-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-        gap: 20px;
-        margin: 20px 0;
-      }
-      
-      .report-actions {
-        text-align: center;
-        margin: 30px 0;
-      }
-      
-      #physician-notes {
-        width: 100%;
-        min-height: 120px;
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid rgba(255,255,255,0.3);
-        background: rgba(255,255,255,0.1);
-        color: white;
-        font-family: inherit;
-        resize: vertical;
-      }
-      
-      #physician-notes::placeholder {
-        color: rgba(255,255,255,0.7);
-      }
-      
-      .assessment-score {
-        font-size: 48px;
-        font-weight: bold;
-        color: #4CAF50;
-        text-align: center;
-        margin: 20px 0;
-      }
-      
       .progress-bar {
         width: 100%;
         height: 6px;
@@ -273,36 +206,6 @@
         height: 100%;
         background: linear-gradient(45deg, #4CAF50, #45a049);
         transition: width 0.3s ease;
-      }
-
-      .data-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 10px 0;
-      }
-
-      .data-table th,
-      .data-table td {
-        padding: 8px 12px;
-        text-align: left;
-        border-bottom: 1px solid rgba(255,255,255,0.2);
-      }
-
-      .data-table th {
-        background: rgba(255,255,255,0.1);
-        font-weight: bold;
-      }
-
-      .metric-value {
-        font-size: 24px;
-        font-weight: bold;
-        color: #4CAF50;
-      }
-
-      .metric-label {
-        font-size: 14px;
-        color: rgba(255,255,255,0.8);
-        margin-bottom: 5px;
       }
 
       /* Golf Power Meter */
@@ -345,15 +248,15 @@
         <div class="progress-fill" id="session-progress" style="width: 0%;"></div>
       </div>
       <div>⛳ Shots: <span id="shot-count">0</span></div>
-      <div>🎯 Accuracy: <span id="accuracy">0%</span></div>
+      <div>🎯 Holes: <span id="hole-count">0</span></div>
       <div>🏆 Score: <span id="current-score">0</span></div>
       <div>🌸 Explored: <span id="exploration-distance">0m</span></div>
     </div>
 
     <!-- Enhanced Mode Indicator -->
-    <div class="mode-indicator walk-mode" id="mode-indicator" style="display: none;">
-      <div><strong>🚶 WALK MODE</strong></div>
-      <div style="font-size: 12px; margin-top: 5px;">Elbow bend = move, Finger flex = collect</div>
+    <div class="mode-indicator waiting-walk" id="mode-indicator" style="display: none;">
+      <div><strong>🚶 WAITING FOR WALKING</strong></div>
+      <div style="font-size: 12px; margin-top: 5px;">Start walking to begin the game!</div>
     </div>
 
     <!-- Golf Power Meter -->
@@ -365,15 +268,18 @@
     <!-- Game Start/End Overlay -->
     <div id="game-overlay">
       <div class="overlay-content">
-        <h1 id="overlay-title">🏌️ VR Therapeutic Golf World Assessment</h1>
+        <h1 id="overlay-title">🏌️ VR Therapeutic Golf World (5 Minutes)</h1>
         <p id="overlay-description">
-          A 10-minute therapeutic VR experience with ESP32 sensor control and gaze interaction.
-          FINAL FIX: Auto-collection eliminated, golf properly exits, ball always returns!
+          ⏱️ 5-minute assessment duration<br>
+          🎯 Golf scoring system<br>
+          💰 Interactive coin collection<br>
+          🐾 Animal interaction mechanics<br>
+          🚶 Game starts when you walk!
         </p>
         
         <div id="esp-settings">
           <h3>ESP32 Connection</h3>
-          <input type="text" id="esp-ip" placeholder="ESP32 IP Address (e.g., 192.168.0.129)" value="192.168.0.129">
+          <input type="text" id="esp-ip" placeholder="ESP32 IP Address (e.g., 172.20.10.6)" value="172.20.10.6">
           <br>
           <button id="connect-esp" class="btn btn-secondary" onclick="connectESP32()">📡 Connect to ESP32</button>
           <div id="connection-status" style="margin-top: 10px; color: #FFD700;"></div>
@@ -385,164 +291,14 @@
           <input type="text" id="patient-id" placeholder="Patient ID" 
                  style="padding: 10px; margin: 5px; border-radius: 5px; border: none; width: 200px;">
         </div>
-        <button id="start-session" class="btn" onclick="startSession()">🎯 Start 10-Minute Assessment</button>
+        <button id="start-session" class="btn" onclick="startSession()">🎯 Start Session (Walk to Begin)</button>
         <button id="view-demo" class="btn btn-secondary" onclick="startDemo()">👁️ View Demo Mode</button>
       </div>
     </div>
 
     <!-- Session Timer -->
     <div class="session-timer" id="session-timer" style="display: none;">
-      ⏱️ <span id="time-remaining">10:00</span>
-    </div>
-
-    <!-- Results Dashboard -->
-    <div id="results-dashboard">
-      <div class="dashboard-header">
-        <h1>📊 Therapeutic Assessment Results</h1>
-        <div id="patient-summary"></div>
-      </div>
-      
-      <!-- Session Metadata -->
-      <div class="metric-card">
-        <h3>📋 Session Metadata</h3>
-        <table class="data-table">
-          <tr>
-            <td><strong>Patient Name:</strong></td>
-            <td id="meta-patient-name">-</td>
-          </tr>
-          <tr>
-            <td><strong>Patient ID:</strong></td>
-            <td id="meta-patient-id">-</td>
-          </tr>
-          <tr>
-            <td><strong>Assessment Date:</strong></td>
-            <td id="meta-date">-</td>
-          </tr>
-          <tr>
-            <td><strong>Session Duration:</strong></td>
-            <td id="meta-duration">-</td>
-          </tr>
-          <tr>
-            <td><strong>Task/Game:</strong></td>
-            <td>VR Therapeutic Golf Assessment</td>
-          </tr>
-          <tr>
-            <td><strong>ESP32 Status:</strong></td>
-            <td id="meta-esp32-status">-</td>
-          </tr>
-        </table>
-      </div>
-
-      <div class="metrics-grid">
-        <!-- Flex Sensor Results -->
-        <div class="metric-card">
-          <h3>📐 Flex Sensor Results</h3>
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Metric</th>
-                <th>Flex 1</th>
-                <th>Flex 2</th>
-                <th>Flex 3</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Baseline Value</td>
-                <td id="flex1-baseline">0</td>
-                <td id="flex2-baseline">0</td>
-                <td id="flex3-baseline">0</td>
-              </tr>
-              <tr>
-                <td>Average During Game</td>
-                <td id="flex1-avg">0</td>
-                <td id="flex2-avg">0</td>
-                <td id="flex3-avg">0</td>
-              </tr>
-              <tr>
-                <td>Peak Value (Max)</td>
-                <td id="flex1-peak">0</td>
-                <td id="flex2-peak">0</td>
-                <td id="flex3-peak">0</td>
-              </tr>
-              <tr>
-                <td>Reps Above Threshold</td>
-                <td id="flex1-reps">0</td>
-                <td id="flex2-reps">0</td>
-                <td id="flex3-reps">0</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-        <!-- IMU Results -->
-        <div class="metric-card">
-          <h3>🔄 IMU Results</h3>
-          <div class="metric-label">Baseline Tilt</div>
-          <div class="metric-value" id="imu-baseline">0°</div>
-          <div class="metric-label">Max Tilt ROM</div>
-          <div class="metric-value" id="imu-max-rom">0°</div>
-          <div class="metric-label">Average Tilt During Game</div>
-          <div class="metric-value" id="imu-avg">0°</div>
-          <div class="metric-label">Stability Index</div>
-          <div class="metric-value" id="imu-stability">0%</div>
-          <div class="metric-label">Repetitions</div>
-          <div class="metric-value" id="imu-repetitions">0</div>
-        </div>
-        
-        <!-- Performance & Engagement -->
-        <div class="metric-card">
-          <h3>🎯 Performance & Engagement</h3>
-          <div class="metric-label">Task Success Rate</div>
-          <div class="metric-value" id="task-success-rate">0%</div>
-          <div class="metric-label">Errors (Missed Cues)</div>
-          <div class="metric-value" id="missed-cues">0</div>
-          <div class="metric-label">Average Reaction Time</div>
-          <div class="metric-value" id="avg-reaction-time">0ms</div>
-          <div class="metric-label">Active Time</div>
-          <div class="metric-value" id="active-time">0min</div>
-          <div class="metric-label">Idle Time</div>
-          <div class="metric-value" id="idle-time">0min</div>
-          <div class="metric-label">Engagement Ratio</div>
-          <div class="metric-value" id="engagement-ratio">0%</div>
-        </div>
-      </div>
-      
-      <!-- Charts Section -->
-      <div class="charts-grid">
-        <div class="chart-container">
-          <h3>📊 Flex Sensor Waveforms (Bending Cycles)</h3>
-          <canvas id="flex-waveform-chart" width="400" height="300"></canvas>
-        </div>
-        
-        <div class="chart-container">
-          <h3>🔄 IMU Tilt Over Time (ROM & Stability)</h3>
-          <canvas id="imu-tilt-chart" width="400" height="300"></canvas>
-        </div>
-        
-        <div class="chart-container">
-          <h3>⏱️ Engagement: Active vs Idle Time</h3>
-          <canvas id="engagement-pie-chart" width="400" height="300"></canvas>
-        </div>
-        
-        <div class="chart-container">
-          <h3>✅ Success vs Failure Analysis</h3>
-          <canvas id="success-failure-chart" width="400" height="300"></canvas>
-        </div>
-      </div>
-      
-      <div class="metric-card">
-        <h3>📋 Clinical Notes</h3>
-        <textarea id="physician-notes" placeholder="Enter clinical observations, recommendations, or treatment notes..."></textarea>
-      </div>
-      
-      <div class="report-actions">
-        <button onclick="exportPDF()" class="btn">📄 Export PDF Report</button>
-        <button onclick="exportCSV()" class="btn btn-secondary">📊 Export Data CSV</button>
-        <button onclick="newSession()" class="btn" style="background: linear-gradient(45deg, #FF9800, #F57C00);">
-          🔄 New Session
-        </button>
-      </div>
+      ⏱️ <span id="time-remaining">5:00</span>
     </div>
 
     <!-- VR Scene -->
@@ -593,21 +349,21 @@
                  geometry="primitive: plane"></a-plane>
         
         <a-text position="0 1.5 0.01" 
-                value="🎮 FINAL FIXED CONTROLS" 
+                value="🎮 CONTROLS (5 MIN)" 
                 color="#FFD700" 
                 scale="0.8 0.8 0.8" 
                 align="center"
                 font="kelsonsans"></a-text>
         
         <a-text position="0 1 0.01" 
-                value="🚶 WALK: Elbow bend = smooth movement" 
+                value="🚶 WALK: Elbow bend = smooth movement (starts game)" 
                 color="#2196F3" 
                 scale="0.5 0.5 0.5" 
                 align="center"
                 font="kelsonsans"></a-text>
         
         <a-text position="0 0.5 0.01" 
-                value="💰 COLLECT: MUST flex finger (no auto)" 
+                value="💰 COLLECT: Must flex finger + be close" 
                 color="#FFD700" 
                 scale="0.5 0.5 0.5" 
                 align="center"
@@ -621,14 +377,14 @@
                 font="kelsonsans"></a-text>
         
         <a-text position="0 -0.5 0.01" 
-                value="⚡ POWER: Add elbow while holding flex" 
+                value="🐾 TOUCH: Must flex finger + be close" 
                 color="#E91E63" 
                 scale="0.5 0.5 0.5" 
                 align="center"
                 font="kelsonsans"></a-text>
         
         <a-text position="0 -1 0.01" 
-                value="🔄 Ball ALWAYS returns to tee!" 
+                value="🔄 Ball returns after shot! Score when in hole!" 
                 color="#FFFFFF" 
                 scale="0.4 0.4 0.4" 
                 align="center"
@@ -710,44 +466,44 @@
         </a-entity>
       </a-entity>
       
-      <!-- Assessment Coins -->
+      <!-- Assessment Coins (HIGHER POSITION) -->
       <a-entity id="assessment-coins">
-        <a-entity class="assessment-coin gazeable" position="5 0.1 18">
+        <a-entity class="assessment-coin gazeable" position="5 0.8 18">
           <a-entity gltf-model="https://jst0605-coder.github.io/jst/Coin.glb" 
                     scale="0.5 0.5 0.5"
                     animation="property: rotation; to: 0 360 0; dur: 2000; loop: true"
                     shadow="cast: true"></a-entity>
         </a-entity>
         
-        <a-entity class="assessment-coin gazeable" position="-8 0.1 25">
+        <a-entity class="assessment-coin gazeable" position="-8 0.8 25">
           <a-entity gltf-model="https://jst0605-coder.github.io/jst/Coin.glb" 
                     scale="0.5 0.5 0.5"
                     animation="property: rotation; to: 0 360 0; dur: 1800; loop: true"
                     shadow="cast: true"></a-entity>
         </a-entity>
         
-        <a-entity class="assessment-coin gazeable" position="18 0.1 -5">
+        <a-entity class="assessment-coin gazeable" position="18 0.8 -5">
           <a-entity gltf-model="https://jst0605-coder.github.io/jst/Coin.glb" 
                     scale="0.5 0.5 0.5"
                     animation="property: rotation; to: 0 360 0; dur: 2200; loop: true"
                     shadow="cast: true"></a-entity>
         </a-entity>
         
-        <a-entity class="assessment-coin gazeable" position="-22 0.1 8">
+        <a-entity class="assessment-coin gazeable" position="-22 0.8 8">
           <a-entity gltf-model="https://jst0605-coder.github.io/jst/Coin.glb" 
                     scale="0.5 0.5 0.5"
                     animation="property: rotation; to: 0 360 0; dur: 1900; loop: true"
                     shadow="cast: true"></a-entity>
         </a-entity>
         
-        <a-entity class="assessment-coin gazeable" position="30 0.1 25">
+        <a-entity class="assessment-coin gazeable" position="30 0.8 25">
           <a-entity gltf-model="https://jst0605-coder.github.io/jst/Coin.glb" 
                     scale="0.5 0.5 0.5"
                     animation="property: rotation; to: 0 360 0; dur: 2100; loop: true"
                     shadow="cast: true"></a-entity>
         </a-entity>
         
-        <a-entity class="assessment-coin gazeable" position="-28 0.1 -12">
+        <a-entity class="assessment-coin gazeable" position="-28 0.8 -12">
           <a-entity gltf-model="https://jst0605-coder.github.io/jst/Coin.glb" 
                     scale="0.5 0.5 0.5"
                     animation="property: rotation; to: 0 360 0; dur: 1700; loop: true"
@@ -792,7 +548,7 @@
         <!-- Easy hole with flag detection zone -->
         <a-cylinder id="easy-hole" position="0 0.05 3" radius="0.4" height="0.4" 
                     color="#000000" shadow="receive: true"></a-cylinder>
-        <a-cylinder id="easy-flag-zone" position="0 0.1 3" radius="2" height="0.1" 
+        <a-cylinder id="easy-flag-zone" position="0 0.1 3" radius="1.0" height="0.1" 
                     color="#FFD700" material="opacity: 0.2; transparent: true"
                     visible="false"></a-cylinder>
         
@@ -898,7 +654,7 @@
         <!-- Enhanced hole with flag detection zone -->
         <a-cylinder id="challenging-hole" position="0 0.2 3" radius="0.35" height="0.4" 
                     color="#000000" shadow="receive: true"></a-cylinder>
-        <a-cylinder id="challenging-flag-zone" position="0 0.15 3" radius="2.5" height="0.1" 
+        <a-cylinder id="challenging-flag-zone" position="0 0.15 3" radius="0.8" height="0.1" 
                     color="#E53935" material="opacity: 0.2; transparent: true"
                     visible="false"></a-cylinder>
         
@@ -986,17 +742,13 @@
     </a-scene>
 
     <script>
-      // =====================================
-      // FINAL FIXED THERAPEUTIC GOLF SYSTEM
-      // =====================================
-      
       // Global variables
       let esp32WebSocket = null;
       let therapeuticGolf = null;
       let sessionTimer = null;
       let gameState = 'menu';
       let lastSensorData = null;
-      let debugMode = false;
+      let gameStarted = false; // New flag to track if game has started
       
       // OPTIMIZED MOVEMENT SYSTEM
       let movementSystem = {
@@ -1012,71 +764,49 @@
         bufferSize: 3
       };
       
-      // GOLF SYSTEM: Separate states for clear control
-      let golfState = 'none'; // 'none', 'aiming', 'power'
+      // GOLF SYSTEM
+      let golfState = 'none';
       let golfPower = 0;
       let golfPowerDirection = 1;
       let golfTargetBall = null;
       let lastActionTime = 0;
-      let actionCooldown = 500; // Increased cooldown
+      let actionCooldown = 500;
       let isInVRMode = false;
-      let golfTimeout = null; // Golf timeout to prevent getting stuck
+      let golfTimeout = null;
       
-      // SENSOR THRESHOLD SYSTEM - ABSOLUTELY NO AUTO-COLLECTION
+      // SENSOR THRESHOLD SYSTEM
       let sensorThresholds = {
-        flexThreshold: 60,  // MUCH HIGHER to prevent any auto-collection
-        imuThreshold: 15,   // MUCH HIGHER to prevent auto-movement  
-        proximityDistance: 2.5, // REDUCED for very deliberate actions
-        flexRequired: false,  // Track if flex is actually being held
-        imuRequired: false    // Track if IMU is actually being held
+        flexThreshold: 35,    
+        imuThreshold: 10,     
+        proximityDistance: 3.5,
+        flexRequired: false,
+        imuRequired: false
       };
       
-      // Enhanced sensor data tracking
-      let sensorDataHistory = {
-        flex1: [],
-        flex2: [],
-        flex3: [],
-        imuTilt: [],
-        timestamps: [],
-        reactionTimes: [],
-        actionEvents: []
-      };
-
-      // Baseline sensor values
-      let baselineValues = {
-        flex1: 0,
-        flex2: 0,
-        flex3: 0,
-        imuTilt: 0,
-        captured: false
-      };
-
       // Performance tracking
       let performanceMetrics = {
-        activeTime: 0,
-        idleTime: 0,
-        lastActivityTime: Date.now(),
         totalActions: 0,
         successfulActions: 0,
-        missedCues: 0
+        missedCues: 0,
+        golfHolesMade: 0,
+        golfShotsTotal: 0,
+        coinsCollected: 0,
+        animalsTouched: 0
       };
 
       // ESP32 Connection
       function connectESP32() {
-        console.log('🔘 Connect button clicked!');
-        
         const ipInput = document.getElementById('esp-ip');
         const statusDiv = document.getElementById('connection-status');
         const espStatus = document.getElementById('esp-status');
         
-        const ip = ipInput ? ipInput.value.trim() : '192.168.0.129';
+        const ip = ipInput ? ipInput.value.trim() : '172.20.10.6';
         
         if (!ip) {
           statusDiv.textContent = '❌ Please enter IP address';
           return;
         }
         
-        console.log('🔗 Connecting to:', ip);
         statusDiv.textContent = `Connecting to ${ip}...`;
         statusDiv.style.color = '#FFD700';
         
@@ -1087,7 +817,6 @@
         esp32WebSocket = new WebSocket(`ws://${ip}:81/`);
         
         esp32WebSocket.onopen = () => {
-          console.log('✅ WebSocket Connected!');
           statusDiv.textContent = '🟢 Connected successfully!';
           statusDiv.style.color = '#4CAF50';
           espStatus.textContent = '📡 ESP32: Connected';
@@ -1100,12 +829,11 @@
             lastSensorData = data;
             processFixedSensorData(data);
           } catch (e) {
-            console.log('Raw data:', event.data);
+            // Handle non-JSON data
           }
         };
         
         esp32WebSocket.onclose = () => {
-          console.log('❌ WebSocket Closed');
           statusDiv.textContent = '🔴 Disconnected';
           statusDiv.style.color = '#F44336';
           espStatus.textContent = '📡 ESP32: Disconnected';
@@ -1113,7 +841,6 @@
         };
         
         esp32WebSocket.onerror = (error) => {
-          console.error('❌ WebSocket Error:', error);
           statusDiv.textContent = '⚠️ Connection Error';
           statusDiv.style.color = '#F44336';
           espStatus.textContent = '📡 ESP32: Error';
@@ -1121,72 +848,39 @@
         };
       }
 
-      // =====================================
-      // FINALLY FIXED SENSOR PROCESSING - NO AUTO-COLLECTION!
-      // =====================================
+      // SENSOR PROCESSING - Game only starts when walking detected
       function processFixedSensorData(data) {
-        if (gameState !== 'playing' && gameState !== 'demo') return;
-        
         const { flex, tilt, flexSolenoid, imuSolenoid } = data;
         if (!flex || tilt === undefined) return;
         
-        const now = Date.now();
-        const timestamp = (now - (therapeuticGolf?.sessionData?.startTime?.getTime() || now)) / 1000;
         const avgFlex = (flex[0] + flex[1] + flex[2]) / 3;
         const absTilt = Math.abs(tilt);
         
-        // Store sensor data for analysis (optimized)
-        if (sensorDataHistory.timestamps.length % 5 === 0) {
-          sensorDataHistory.flex1.push(flex[0] || 0);
-          sensorDataHistory.flex2.push(flex[1] || 0);
-          sensorDataHistory.flex3.push(flex[2] || 0);
-          sensorDataHistory.imuTilt.push(absTilt);
-          sensorDataHistory.timestamps.push(timestamp);
-        }
-        
-        // Capture baseline values in first 3 seconds
-        if (!baselineValues.captured && timestamp < 3) {
-          if (sensorDataHistory.flex1.length === 1) {
-            baselineValues.flex1 = flex[0] || 0;
-            baselineValues.flex2 = flex[1] || 0;
-            baselineValues.flex3 = flex[2] || 0;
-            baselineValues.imuTilt = absTilt;
-            baselineValues.captured = true;
-            console.log('📊 Baseline values captured:', baselineValues);
-          }
-        }
-        
-        // Track activity
-        performanceMetrics.lastActivityTime = now;
-        
-        // STRICT SENSOR STATES - MUCH HIGHER THRESHOLDS
+        // FIXED SENSOR STATES
         const flexActive = (flexSolenoid === true) || (avgFlex >= sensorThresholds.flexThreshold);
         const imuActive = (imuSolenoid === true) || (absTilt >= sensorThresholds.imuThreshold);
         
         sensorThresholds.flexRequired = flexActive;
         sensorThresholds.imuRequired = imuActive;
         
-        console.log(`🔧 FINAL FIX - Sensor States - Flex: ${flexActive ? 'ACTIVE' : 'inactive'} (${avgFlex.toFixed(1)}/${sensorThresholds.flexThreshold}), IMU: ${imuActive ? 'ACTIVE' : 'inactive'} (${absTilt.toFixed(1)}/${sensorThresholds.imuThreshold}), Golf: ${golfState}`);
+        // Check if we're in waiting mode and detect walking to start game
+        if (gameState === 'waiting' && imuActive) {
+          actuallyStartGame();
+          return;
+        }
+        
+        // Only process other interactions if game has started
+        if (!gameStarted || (gameState !== 'playing' && gameState !== 'demo')) return;
+        
+        const now = Date.now();
         
         // MOVEMENT: Only when IMU is deliberately activated AND not in golf mode
         if (imuActive && golfState === 'none') {
           const tiltIntensity = Math.min(absTilt / 25, 1.0);
           const targetSpeed = 0.2 + (tiltIntensity * 0.4);
           updateSmoothMovement(targetSpeed);
-          
           performanceMetrics.totalActions++;
-          
-          // Track movement action (optimized)
-          if (sensorDataHistory.actionEvents.length % 10 === 0) {
-            sensorDataHistory.actionEvents.push({
-              type: 'movement',
-              timestamp: timestamp,
-              flex: avgFlex,
-              tilt: absTilt
-            });
-          }
         } else {
-          // Stop movement when IMU not active
           updateSmoothMovement(0);
         }
         
@@ -1195,54 +889,39 @@
           return;
         }
         
-        // ABSOLUTELY NO AUTO-COLLECTION - ONLY when finger is ACTIVELY flexed AND within proximity
+        // COLLECTION AND TOUCH: Must flex AND be in proximity
         if (flexActive && golfState === 'none') {
-          let success = false;
+          let actionTaken = false;
           
-          console.log('🤏 DELIBERATE finger flex detected - checking proximity for collection/touch');
-          
-          // STRICT: Must be both flexing AND very close
-          if (handleStrictProximityCollection()) {
-            success = true;
+          if (handleCoinCollection()) {
+            actionTaken = true;
             performanceMetrics.successfulActions++;
-            console.log('💰 SUCCESS: Coin collected via deliberate flex + proximity');
+            performanceMetrics.coinsCollected++;
           }
           
-          // Try animal touch if no coin collected
-          if (!success && handleStrictProximityTouch()) {
-            success = true;
+          if (!actionTaken && handleAnimalTouch()) {
+            actionTaken = true;
             performanceMetrics.successfulActions++;
-            console.log('🐾 SUCCESS: Animal touched via deliberate flex + proximity');
+            performanceMetrics.animalsTouched++;
           }
           
-          if (success) {
+          if (actionTaken) {
             performanceMetrics.totalActions++;
-            
-            sensorDataHistory.actionEvents.push({
-              type: 'pickup_touch',
-              timestamp: timestamp,
-              flex: avgFlex,
-              tilt: absTilt
-            });
           } else {
             performanceMetrics.missedCues++;
-            console.log('❌ MISS: No valid target in strict proximity for deliberate flex');
           }
           
           lastActionTime = now;
         }
         
-        // GOLF SYSTEM: Separate from other actions
-        handleGolfSystem(avgFlex, absTilt, flexActive, imuActive, timestamp);
+        // GOLF SYSTEM
+        handleGolfSystem(avgFlex, absTilt, flexActive, imuActive);
       }
 
-      // =====================================
       // SMOOTH MOVEMENT SYSTEM
-      // =====================================
       function updateSmoothMovement(targetSpeed) {
         const now = Date.now();
         
-        // Frame rate limiting for consistent performance
         if (now - movementSystem.lastUpdateTime < movementSystem.frameInterval) {
           return;
         }
@@ -1250,11 +929,9 @@
         movementSystem.lastUpdateTime = now;
         movementSystem.targetSpeed = Math.max(0, Math.min(targetSpeed, movementSystem.maxSpeed));
         
-        // Smooth interpolation
         const speedDiff = movementSystem.targetSpeed - movementSystem.currentSpeed;
         movementSystem.currentSpeed += speedDiff * movementSystem.smoothing;
         
-        // Apply movement if above minimum threshold
         if (movementSystem.currentSpeed > movementSystem.minSpeed) {
           executePlayerMovement(movementSystem.currentSpeed);
           movementSystem.isActive = true;
@@ -1269,75 +946,57 @@
         
         if (!rig || !camera) return;
         
-        // Get current camera rotation and rig position
         const rotation = camera.getAttribute('rotation');
         const position = rig.getAttribute('position');
         
-        // Calculate movement direction based on camera rotation
         const radians = (rotation.y * Math.PI) / 180;
         const deltaX = -Math.sin(radians) * speed;
         const deltaZ = -Math.cos(radians) * speed;
         
-        // Apply movement with boundary checking
         const newPosition = {
           x: position.x + deltaX,
           y: position.y,
           z: position.z + deltaZ
         };
         
-        // Boundary check - keep within 65 unit radius
         const distance = Math.sqrt(newPosition.x * newPosition.x + newPosition.z * newPosition.z);
         if (distance < 65) {
-          // Use A-Frame's setAttribute for smooth updates
           rig.setAttribute('position', newPosition);
           
-          // Update game metrics
           if (therapeuticGolf) {
             therapeuticGolf.sessionData.explorationDistance += speed;
             therapeuticGolf.sessionData.totalDistance += speed;
-            
-            // Update HUD less frequently for better performance
-            if (Math.random() < 0.1) {
-              updateHUD();
-            }
+            updateHUD();
           }
         }
       }
 
-      // =====================================
-      // COMPLETELY FIXED GOLF SYSTEM - NO MORE GETTING STUCK!
-      // =====================================
-      function handleGolfSystem(avgFlex, absTilt, flexActive, imuActive, timestamp) {
+      // GOLF SYSTEM
+      function handleGolfSystem(avgFlex, absTilt, flexActive, imuActive) {
         const isLookingAtBall = checkGolfBallGaze();
         
         switch (golfState) {
           case 'none':
-            // Enter golf mode: Look at ball + hold finger flex
             if (isLookingAtBall && flexActive) {
               enterGolfAiming(isLookingAtBall.ball);
             }
             break;
             
           case 'aiming':
-            // Continue aiming: Keep finger flex held
             if (flexActive) {
-              // Start power meter: Add elbow movement
               if (imuActive) {
                 startGolfPowerMeter();
               }
             } else {
-              // Released finger - FORCE cancel golf and return to normal mode
               forceExitGolf('finger released during aiming');
             }
             break;
             
           case 'power':
-            // Building power: Keep both finger + elbow
             if (flexActive && imuActive) {
               updateGolfPower();
             } else {
-              // Released either control - swing!
-              executeGolfSwing(timestamp);
+              executeFixedGolfSwing();
             }
             break;
         }
@@ -1360,16 +1019,12 @@
         golfState = 'aiming';
         golfTargetBall = ball;
         updateModeIndicator();
-        console.log('🏌️ Entered golf aiming mode');
         
-        // Set timeout to prevent getting stuck in golf mode
         if (golfTimeout) clearTimeout(golfTimeout);
         golfTimeout = setTimeout(() => {
-          console.log('⏰ Golf timeout - forcing exit from aiming mode');
           forceExitGolf('timeout during aiming');
-        }, 10000); // 10 second timeout
+        }, 10000);
         
-        // Visual feedback
         ball.setAttribute('animation__glow', {
           property: 'material.emissiveIntensity',
           to: '0.8',
@@ -1384,17 +1039,13 @@
         golfPower = 0;
         golfPowerDirection = 1;
         
-        // Show power meter
         document.getElementById('golf-power-meter').style.display = 'block';
         updateModeIndicator();
-        console.log('⚡ Golf power meter started');
         
-        // Reset timeout for power mode
         if (golfTimeout) clearTimeout(golfTimeout);
         golfTimeout = setTimeout(() => {
-          console.log('⏰ Golf timeout - forcing swing from power mode');
-          executeGolfSwing(Date.now());
-        }, 8000); // 8 second timeout for power mode
+          executeFixedGolfSwing();
+        }, 8000);
       }
 
       function updateGolfPower() {
@@ -1411,29 +1062,23 @@
         document.getElementById('power-meter-fill').style.width = golfPower + '%';
       }
 
-      function executeGolfSwing(timestamp) {
+      function executeFixedGolfSwing() {
         if (!golfTargetBall) {
           forceExitGolf('no target ball during swing');
           return;
         }
         
-        console.log(`🏌️ Golf swing executed with ${golfPower}% power!`);
-        
-        // Clear timeout immediately
         if (golfTimeout) {
           clearTimeout(golfTimeout);
           golfTimeout = null;
         }
         
-        // Hide power meter
         document.getElementById('golf-power-meter').style.display = 'none';
         
-        // Calculate ball trajectory based on power
         const power = golfPower / 100;
         const ballPos = golfTargetBall.getAttribute('position');
         const ballParent = golfTargetBall.parentEl.getAttribute('position');
         
-        // Determine which course and hole
         const isEasy = Math.abs(ballParent.x + 20) < Math.abs(ballParent.x - 20);
         const holePos = {
           x: ballParent.x + 0,
@@ -1441,7 +1086,6 @@
           z: ballParent.z + 3
         };
         
-        // Calculate target with power and accuracy
         const accuracy = 1 - (Math.abs(power - 0.7) * 2);
         const spread = (1 - accuracy) * 8;
         
@@ -1449,185 +1093,112 @@
         const targetZ = holePos.z + (Math.random() - 0.5) * spread;
         const height = 1 + power * 3;
         
-        // Animate ball
         golfTargetBall.setAttribute('animation__swing', {
           property: 'position',
           to: `${targetX} ${height} ${targetZ}`,
           dur: 1500 + power * 1000
         });
         
-        // Track shot
+        performanceMetrics.golfShotsTotal++;
         if (therapeuticGolf) {
           therapeuticGolf.sessionData.totalShots++;
           updateHUD();
         }
         
-        // Track golf swing action
-        sensorDataHistory.actionEvents.push({
-          type: 'golf_swing',
-          timestamp: timestamp,
-          flex: avgFlex,
-          tilt: absTilt,
-          power: golfPower
-        });
-        
         performanceMetrics.totalActions++;
-        
-        // FORCE EXIT golf mode immediately after swing
         forceExitGolf('swing completed');
         
-        // Check for success after ball lands and ALWAYS reset ball
-        const landingTime = 2500 + power * 1000;
+        const landingTime = 1500 + power * 1000;
         setTimeout(() => {
-          checkGolfSuccess(targetX, targetZ, holePos, isEasy);
-          forcedResetGolfBallToTee(isEasy); // GUARANTEED reset
+          const holeSuccess = checkFixedGolfHoleEntry(targetX, targetZ, holePos, isEasy);
+          
+          if (holeSuccess) {
+            performanceMetrics.golfHolesMade++;
+            if (therapeuticGolf) {
+              therapeuticGolf.sessionData.successfulShots++;
+              updateHUD();
+            }
+            
+            const flagZone = document.getElementById(isEasy ? 'easy-flag-zone' : 'challenging-flag-zone');
+            if (flagZone) {
+              flagZone.setAttribute('animation__success', {
+                property: 'material.opacity',
+                to: '0.8',
+                dur: 1000,
+                dir: 'alternate',
+                loop: 3
+              });
+            }
+          }
+          
+          setTimeout(() => {
+            guaranteedBallResetToTee(isEasy);
+          }, 1000);
         }, landingTime);
       }
 
-      function checkGolfSuccess(ballX, ballZ, holePos, isEasy) {
+      function checkFixedGolfHoleEntry(ballX, ballZ, holePos, isEasy) {
         const distance = Math.sqrt(
           Math.pow(ballX - holePos.x, 2) + 
           Math.pow(ballZ - holePos.z, 2)
         );
         
-        const successRadius = isEasy ? 2.5 : 2.0;
-        
-        console.log(`⛳ Ball distance from flag: ${distance.toFixed(1)}m (success radius: ${successRadius}m)`);
-        
-        if (distance <= successRadius) {
-          console.log('🎯 SUCCESS! Ball reached the flag!');
-          
-          if (therapeuticGolf) {
-            therapeuticGolf.sessionData.successfulShots++;
-            updateHUD();
-          }
-          
-          performanceMetrics.successfulActions++;
-          
-          // Success celebration
-          const flagZone = document.getElementById(isEasy ? 'easy-flag-zone' : 'challenging-flag-zone');
-          if (flagZone) {
-            flagZone.setAttribute('animation__success', {
-              property: 'material.opacity',
-              to: '0.8',
-              dur: 1000,
-              dir: 'alternate',
-              loop: 3
-            });
-          }
-          
-          console.log('🏆 Shot counted as successful!');
-        } else {
-          console.log('❌ Shot missed the flag');
-        }
+        const holeRadius = isEasy ? 0.35 : 0.3;
+        return distance <= holeRadius;
       }
 
-      // GUARANTEED ball reset function - NO FAILURE POSSIBLE
-      function forcedResetGolfBallToTee(isEasy) {
-        console.log(`🔄 FORCED reset of ${isEasy ? 'easy' : 'challenging'} ball to tee...`);
-        
+      function guaranteedBallResetToTee(isEasy) {
         const ballId = isEasy ? 'easy-ball' : 'challenging-ball';
         const ball = document.getElementById(ballId);
         
         if (ball) {
-          // Remove ALL animations
           ball.removeAttribute('animation__glow');
           ball.removeAttribute('animation__swing');
           ball.removeAttribute('animation');
           
-          // FORCE reset to original tee position
           const originalPos = isEasy ? { x: 0, y: 0.2, z: 12 } : { x: 0, y: 0.35, z: 15 };
           
-          // Multiple forced resets to ensure it works
           ball.setAttribute('position', originalPos);
           ball.setAttribute('scale', '1 1 1');
           ball.setAttribute('rotation', '0 0 0');
           
-          // Force another reset after a delay to be absolutely sure
           setTimeout(() => {
             ball.setAttribute('position', originalPos);
             ball.setAttribute('scale', '1 1 1');
             ball.setAttribute('rotation', '0 0 0');
-            console.log(`✅ Ball GUARANTEED reset to: ${originalPos.x} ${originalPos.y} ${originalPos.z}`);
           }, 500);
           
-        } else {
-          console.error(`❌ Could not find ball with ID: ${ballId}`);
+          setTimeout(() => {
+            ball.setAttribute('position', originalPos);
+          }, 1000);
         }
       }
 
-      // FORCE EXIT golf mode - NO GETTING STUCK
       function forceExitGolf(reason) {
-        console.log(`❌ FORCE EXITING golf mode - Reason: ${reason}`);
-        
-        // Clear timeout
         if (golfTimeout) {
           clearTimeout(golfTimeout);
           golfTimeout = null;
         }
         
-        // Reset all golf states
         golfState = 'none';
         golfTargetBall = null;
         golfPower = 0;
         golfPowerDirection = 1;
         
-        // Hide power meter
         document.getElementById('golf-power-meter').style.display = 'none';
         
-        // Remove any glow animations from balls
         const easyBall = document.getElementById('easy-ball');
         const challengingBall = document.getElementById('challenging-ball');
         if (easyBall) easyBall.removeAttribute('animation__glow');
         if (challengingBall) challengingBall.removeAttribute('animation__glow');
         
-        // Update mode indicator
         updateModeIndicator();
-        
-        console.log('✅ Golf mode FORCEFULLY exited - back to normal mode');
       }
 
-      // Update mode indicator
-      function updateModeIndicator() {
-        const indicator = document.getElementById('mode-indicator');
-        if (!indicator) return;
-        
-        switch (golfState) {
-          case 'aiming':
-            indicator.className = 'mode-indicator golf-ready';
-            indicator.innerHTML = `
-              <div><strong>🎯 GOLF AIMING</strong></div>
-              <div style="font-size: 12px; margin-top: 5px;">Keep finger flex + add elbow for power</div>
-              <div style="font-size: 12px;">Release finger to cancel</div>
-            `;
-            break;
-            
-          case 'power':
-            indicator.className = 'mode-indicator golf-ready';
-            indicator.innerHTML = `
-              <div><strong>⚡ GOLF POWER</strong></div>
-              <div style="font-size: 12px; margin-top: 5px;">Hold both controls for power</div>
-              <div style="font-size: 12px;">Release either to swing!</div>
-            `;
-            break;
-            
-          default:
-            indicator.className = 'mode-indicator walk-mode';
-            indicator.innerHTML = `
-              <div><strong>🚶 FIXED: NO AUTO-COLLECT</strong></div>
-              <div style="font-size: 12px; margin-top: 5px;">Elbow = move, MUST flex finger + be close</div>
-              <div style="font-size: 12px;">Look at ball + flex finger for golf</div>
-            `;
-            break;
-        }
-      }
-
-      // ABSOLUTELY NO AUTO-COLLECTION - Must be both flexing AND in proximity
-      function handleStrictProximityCollection() {
+      // COIN COLLECTION
+      function handleCoinCollection() {
         const coins = document.querySelectorAll('.assessment-coin');
         const rigPos = document.querySelector('#rig').getAttribute('position');
-        
-        console.log(`🔍 Checking ${coins.length} coins for STRICT proximity + flex collection...`);
         
         let collected = false;
         coins.forEach((coin) => {
@@ -1638,15 +1209,9 @@
               Math.pow(rigPos.z - coinPos.z, 2)
             );
             
-            console.log(`💰 Coin distance: ${distance.toFixed(1)}m (must be < ${sensorThresholds.proximityDistance}m + finger flexed)`);
-            
-            // ABSOLUTELY STRICT: Must be BOTH flexing AND very close
             if (distance < sensorThresholds.proximityDistance) {
-              console.log('💰 ✅ Coin collected - BOTH flex active AND in proximity');
               collectCoin(coin);
               collected = true;
-            } else {
-              console.log(`💰 ❌ Coin too far: ${distance.toFixed(1)}m > ${sensorThresholds.proximityDistance}m`);
             }
           }
         });
@@ -1654,12 +1219,10 @@
         return collected;
       }
 
-      // ABSOLUTELY NO AUTO-TOUCH - Must be both flexing AND in proximity
-      function handleStrictProximityTouch() {
+      // ANIMAL TOUCH
+      function handleAnimalTouch() {
         const animals = document.querySelectorAll('.touchable');
         const rigPos = document.querySelector('#rig').getAttribute('position');
-        
-        console.log(`🔍 Checking ${animals.length} animals for STRICT proximity + flex touch...`);
         
         let touched = false;
         animals.forEach((animal) => {
@@ -1670,15 +1233,9 @@
               Math.pow(rigPos.z - animalPos.z, 2)
             );
             
-            console.log(`🐾 Animal distance: ${distance.toFixed(1)}m (must be < ${sensorThresholds.proximityDistance}m + finger flexed)`);
-            
-            // ABSOLUTELY STRICT: Must be BOTH flexing AND very close
             if (distance < sensorThresholds.proximityDistance) {
-              console.log('🐾 ✅ Animal touched - BOTH flex active AND in proximity');
               touchAnimal(animal);
               touched = true;
-            } else {
-              console.log(`🐾 ❌ Animal too far: ${distance.toFixed(1)}m > ${sensorThresholds.proximityDistance}m`);
             }
           }
         });
@@ -1686,194 +1243,6 @@
         return touched;
       }
 
-      // =====================================
-      // SESSION MANAGEMENT
-      // =====================================
-      
-      function startSession() {
-        const patientName = document.getElementById('patient-name').value.trim();
-        const patientId = document.getElementById('patient-id').value.trim();
-        
-        if (!patientName || !patientId) {
-          alert('Please enter patient name and ID before starting the session.');
-          return;
-        }
-        
-        initializeTherapeuticGolf(patientName, patientId);
-        
-        // Reset all states
-        forceExitGolf('session start');
-        movementSystem.currentSpeed = 0;
-        movementSystem.targetSpeed = 0;
-        movementSystem.isActive = false;
-        sensorThresholds.flexRequired = false;
-        sensorThresholds.imuRequired = false;
-        
-        document.getElementById('game-overlay').classList.add('hidden');
-        document.getElementById('session-timer').style.display = 'block';
-        document.getElementById('performance-hud').style.display = 'block';
-        document.getElementById('mode-indicator').style.display = 'block';
-        
-        gameState = 'playing';
-        startSessionTimer();
-        
-        // Clear sensor history and reset metrics
-        sensorDataHistory = {
-          flex1: [], flex2: [], flex3: [], imuTilt: [],
-          timestamps: [], reactionTimes: [], actionEvents: []
-        };
-        baselineValues = { flex1: 0, flex2: 0, flex3: 0, imuTilt: 0, captured: false };
-        performanceMetrics = { 
-          activeTime: 0, idleTime: 0, lastActivityTime: Date.now(),
-          totalActions: 0, successfulActions: 0, missedCues: 0 
-        };
-        
-        setTimeout(() => {
-          initializeScatteredFlowers();
-          spawnAssessmentCoins();
-        }, 1000);
-      }
-
-      function startDemo() {
-        // Reset all states
-        forceExitGolf('demo start');
-        movementSystem.currentSpeed = 0;
-        movementSystem.targetSpeed = 0;
-        movementSystem.isActive = false;
-        sensorThresholds.flexRequired = false;
-        sensorThresholds.imuRequired = false;
-        
-        // Create dummy therapeutic golf object for demo
-        therapeuticGolf = {
-          sessionData: {
-            patientName: 'Demo User',
-            patientId: 'DEMO',
-            startTime: new Date(),
-            totalShots: 0,
-            successfulShots: 0,
-            coinsCollected: 0,
-            animalInteractions: 0,
-            explorationDistance: 0,
-            totalDistance: 0,
-            flowersDiscovered: 0,
-            sessionCompleted: false
-          }
-        };
-        
-        updateModeIndicator();
-        
-        document.getElementById('game-overlay').classList.add('hidden');
-        document.getElementById('session-timer').style.display = 'block';
-        document.getElementById('performance-hud').style.display = 'block';
-        document.getElementById('mode-indicator').style.display = 'block';
-        
-        gameState = 'demo';
-        
-        setTimeout(() => {
-          initializeScatteredFlowers();
-        }, 1000);
-      }
-
-      function newSession() {
-        gameState = 'menu';
-        forceExitGolf('new session');
-        movementSystem.currentSpeed = 0;
-        movementSystem.targetSpeed = 0;
-        movementSystem.isActive = false;
-        
-        if (sessionTimer) {
-          clearInterval(sessionTimer);
-        }
-        
-        document.getElementById('results-dashboard').style.display = 'none';
-        document.getElementById('game-overlay').classList.remove('hidden');
-        document.getElementById('golf-power-meter').style.display = 'none';
-        
-        document.getElementById('patient-name').value = '';
-        document.getElementById('patient-id').value = '';
-        
-        document.getElementById('session-timer').style.display = 'none';
-        document.getElementById('performance-hud').style.display = 'none';
-        document.getElementById('mode-indicator').style.display = 'none';
-      }
-
-      function initializeTherapeuticGolf(patientName, patientId) {
-        therapeuticGolf = {
-          sessionData: {
-            patientName: patientName,
-            patientId: patientId,
-            startTime: new Date(),
-            totalShots: 0,
-            successfulShots: 0,
-            coinsCollected: 0,
-            animalInteractions: 0,
-            explorationDistance: 0,
-            totalDistance: 0,
-            flowersDiscovered: 0,
-            sessionCompleted: false
-          }
-        };
-        
-        console.log('🏥 FINAL FIXED Therapeutic Golf System initialized - ZERO auto-collection!');
-      }
-
-      // Session timer
-      function startSessionTimer() {
-        let timeRemaining = 600; // 10 minutes
-        const timerDisplay = document.getElementById('time-remaining');
-        const progressBar = document.getElementById('session-progress');
-        
-        sessionTimer = setInterval(() => {
-          timeRemaining--;
-          
-          const minutes = Math.floor(timeRemaining / 60);
-          const seconds = timeRemaining % 60;
-          timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-          
-          const progress = ((600 - timeRemaining) / 600) * 100;
-          progressBar.style.width = `${progress}%`;
-          
-          // Track active/idle time
-          const now = Date.now();
-          if (now - performanceMetrics.lastActivityTime < 5000) {
-            performanceMetrics.activeTime += 1;
-          } else {
-            performanceMetrics.idleTime += 1;
-          }
-          
-          if (timeRemaining <= 0) {
-            endSession();
-          }
-        }, 1000);
-      }
-
-      function endSession() {
-        if (sessionTimer) {
-          clearInterval(sessionTimer);
-        }
-        
-        gameState = 'finished';
-        forceExitGolf('session end');
-        movementSystem.currentSpeed = 0;
-        movementSystem.targetSpeed = 0;
-        movementSystem.isActive = false;
-        
-        if (therapeuticGolf) {
-          therapeuticGolf.sessionData.sessionCompleted = true;
-        }
-        
-        document.getElementById('session-timer').style.display = 'none';
-        document.getElementById('performance-hud').style.display = 'none';
-        document.getElementById('mode-indicator').style.display = 'none';
-        document.getElementById('golf-power-meter').style.display = 'none';
-        
-        showResults();
-      }
-
-      // =====================================
-      // GAME INTERACTION FUNCTIONS
-      // =====================================
-      
       function collectCoin(coin) {
         if (!coin || !coin.parentNode || (gameState !== 'playing' && gameState !== 'demo')) return;
         
@@ -1912,7 +1281,7 @@
         
         animal.setAttribute('animation__touch', {
           property: 'scale',
-          to: '1.1 1.1 1.1',
+          to: '1.2 1.2 1.2',
           dur: 300,
           dir: 'alternate',
           loop: 2
@@ -1924,414 +1293,245 @@
         }
       }
 
-      // =====================================
-      // RESULTS AND CHARTS
-      // =====================================
-      
-      function showResults() {
-        const dashboard = document.getElementById('results-dashboard');
-        dashboard.style.display = 'block';
+      // Update mode indicator
+      function updateModeIndicator() {
+        const indicator = document.getElementById('mode-indicator');
+        if (!indicator) return;
         
-        if (therapeuticGolf && sensorDataHistory.timestamps.length > 0) {
-          const sessionData = therapeuticGolf.sessionData;
-          
-          // Populate session metadata
-          document.getElementById('meta-patient-name').textContent = sessionData.patientName;
-          document.getElementById('meta-patient-id').textContent = sessionData.patientId;
-          document.getElementById('meta-date').textContent = sessionData.startTime.toLocaleDateString();
-          document.getElementById('meta-duration').textContent = sessionData.sessionCompleted ? '10:00 minutes' : 'Incomplete';
-          document.getElementById('meta-esp32-status').textContent = 
-            esp32WebSocket && esp32WebSocket.readyState === WebSocket.OPEN ? 'Connected' : 'Disconnected';
-          
-          // Calculate metrics
-          calculateFlexMetrics();
-          calculateIMUMetrics();
-          calculatePerformanceMetrics();
-          generateCharts();
-          
-          console.log('📊 FINAL FIXED Results Dashboard populated');
+        switch (golfState) {
+          case 'aiming':
+            indicator.className = 'mode-indicator golf-ready';
+            indicator.innerHTML = `
+              <div><strong>🎯 GOLF AIMING</strong></div>
+              <div style="font-size: 12px; margin-top: 5px;">Keep finger flex + add elbow for power</div>
+              <div style="font-size: 12px;">Release finger to cancel</div>
+            `;
+            break;
+            
+          case 'power':
+            indicator.className = 'mode-indicator golf-ready';
+            indicator.innerHTML = `
+              <div><strong>⚡ GOLF POWER</strong></div>
+              <div style="font-size: 12px; margin-top: 5px;">Hold both controls for power</div>
+              <div style="font-size: 12px;">Release either to swing!</div>
+            `;
+            break;
+            
+          default:
+            if (gameState === 'waiting') {
+              indicator.className = 'mode-indicator waiting-walk';
+              indicator.innerHTML = `
+                <div><strong>🚶 WAITING FOR WALKING</strong></div>
+                <div style="font-size: 12px; margin-top: 5px;">Start walking to begin the game!</div>
+              `;
+            } else {
+              indicator.className = 'mode-indicator walk-mode';
+              indicator.innerHTML = `
+                <div><strong>🚶 All Interactions Active! (5 Min)</strong></div>
+                <div style="font-size: 12px; margin-top: 5px;">Elbow = move, flex finger + be close for interaction</div>
+                <div style="font-size: 12px;">Golf scores when ball enters hole</div>
+              `;
+            }
+            break;
         }
       }
 
-      function calculateFlexMetrics() {
-        const threshold = 25;
+      // SESSION MANAGEMENT - MODIFIED TO WAIT FOR WALKING
+      function startSession() {
+        const patientName = document.getElementById('patient-name').value.trim();
+        const patientId = document.getElementById('patient-id').value.trim();
         
-        if (sensorDataHistory.flex1.length === 0) return;
-        
-        // Flex 1 metrics
-        const flex1Avg = sensorDataHistory.flex1.reduce((a, b) => a + b, 0) / sensorDataHistory.flex1.length;
-        const flex1Peak = Math.max(...sensorDataHistory.flex1);
-        const flex1Reps = sensorDataHistory.flex1.filter(val => val > threshold).length;
-        
-        document.getElementById('flex1-baseline').textContent = baselineValues.flex1.toFixed(1);
-        document.getElementById('flex1-avg').textContent = flex1Avg.toFixed(1);
-        document.getElementById('flex1-peak').textContent = flex1Peak.toFixed(1);
-        document.getElementById('flex1-reps').textContent = flex1Reps;
-        
-        // Flex 2 metrics
-        const flex2Avg = sensorDataHistory.flex2.reduce((a, b) => a + b, 0) / sensorDataHistory.flex2.length;
-        const flex2Peak = Math.max(...sensorDataHistory.flex2);
-        const flex2Reps = sensorDataHistory.flex2.filter(val => val > threshold).length;
-        
-        document.getElementById('flex2-baseline').textContent = baselineValues.flex2.toFixed(1);
-        document.getElementById('flex2-avg').textContent = flex2Avg.toFixed(1);
-        document.getElementById('flex2-peak').textContent = flex2Peak.toFixed(1);
-        document.getElementById('flex2-reps').textContent = flex2Reps;
-        
-        // Flex 3 metrics
-        const flex3Avg = sensorDataHistory.flex3.reduce((a, b) => a + b, 0) / sensorDataHistory.flex3.length;
-        const flex3Peak = Math.max(...sensorDataHistory.flex3);
-        const flex3Reps = sensorDataHistory.flex3.filter(val => val > threshold).length;
-        
-        document.getElementById('flex3-baseline').textContent = baselineValues.flex3.toFixed(1);
-        document.getElementById('flex3-avg').textContent = flex3Avg.toFixed(1);
-        document.getElementById('flex3-peak').textContent = flex3Peak.toFixed(1);
-        document.getElementById('flex3-reps').textContent = flex3Reps;
-      }
-
-      function calculateIMUMetrics() {
-        if (sensorDataHistory.imuTilt.length === 0) return;
-        
-        const imuAvg = sensorDataHistory.imuTilt.reduce((a, b) => a + b, 0) / sensorDataHistory.imuTilt.length;
-        const imuMax = Math.max(...sensorDataHistory.imuTilt);
-        const imuMin = Math.min(...sensorDataHistory.imuTilt);
-        const imuRange = imuMax - imuMin;
-        
-        // Calculate stability index
-        const imuVariance = sensorDataHistory.imuTilt.reduce((acc, val) => acc + Math.pow(val - imuAvg, 2), 0) / sensorDataHistory.imuTilt.length;
-        const stabilityIndex = Math.max(0, 100 - (Math.sqrt(imuVariance) * 10));
-        
-        // Count repetitions
-        const tiltThreshold = 8;
-        const imuReps = sensorDataHistory.imuTilt.filter(val => val > tiltThreshold).length;
-        
-        document.getElementById('imu-baseline').textContent = baselineValues.imuTilt.toFixed(1) + '°';
-        document.getElementById('imu-max-rom').textContent = imuRange.toFixed(1) + '°';
-        document.getElementById('imu-avg').textContent = imuAvg.toFixed(1) + '°';
-        document.getElementById('imu-stability').textContent = stabilityIndex.toFixed(1) + '%';
-        document.getElementById('imu-repetitions').textContent = imuReps;
-      }
-
-      function calculatePerformanceMetrics() {
-        const totalTime = performanceMetrics.activeTime + performanceMetrics.idleTime;
-        const successRate = performanceMetrics.totalActions > 0 ? 
-          (performanceMetrics.successfulActions / performanceMetrics.totalActions * 100) : 0;
-        const engagementRatio = totalTime > 0 ? (performanceMetrics.activeTime / totalTime * 100) : 0;
-        
-        // Calculate average reaction time
-        let avgReactionTime = 250;
-        if (sensorDataHistory.actionEvents.length > 1) {
-          const intervals = [];
-          for (let i = 1; i < sensorDataHistory.actionEvents.length; i++) {
-            const interval = (sensorDataHistory.actionEvents[i].timestamp - sensorDataHistory.actionEvents[i-1].timestamp) * 1000;
-            if (interval < 5000 && interval > 100) {
-              intervals.push(interval);
-            }
-          }
-          if (intervals.length > 0) {
-            avgReactionTime = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-          }
+        if (!patientName || !patientId) {
+          alert('Please enter patient name and ID before starting the session.');
+          return;
         }
         
-        document.getElementById('task-success-rate').textContent = successRate.toFixed(1) + '%';
-        document.getElementById('missed-cues').textContent = performanceMetrics.missedCues;
-        document.getElementById('avg-reaction-time').textContent = Math.round(avgReactionTime) + 'ms';
-        document.getElementById('active-time').textContent = (performanceMetrics.activeTime / 60).toFixed(1) + 'min';
-        document.getElementById('idle-time').textContent = (performanceMetrics.idleTime / 60).toFixed(1) + 'min';
-        document.getElementById('engagement-ratio').textContent = engagementRatio.toFixed(1) + '%';
+        initializeTherapeuticGolf(patientName, patientId);
+        
+        // Reset all states
+        forceExitGolf('session start');
+        movementSystem.currentSpeed = 0;
+        movementSystem.targetSpeed = 0;
+        movementSystem.isActive = false;
+        sensorThresholds.flexRequired = false;
+        sensorThresholds.imuRequired = false;
+        gameStarted = false;
+        
+        document.getElementById('game-overlay').classList.add('hidden');
+        document.getElementById('performance-hud').style.display = 'block';
+        document.getElementById('mode-indicator').style.display = 'block';
+        
+        // Set to waiting state - game will start when walking is detected
+        gameState = 'waiting';
+        updateModeIndicator();
+        
+        // Reset metrics
+        performanceMetrics = { 
+          totalActions: 0, successfulActions: 0, missedCues: 0,
+          golfHolesMade: 0, golfShotsTotal: 0,
+          coinsCollected: 0, animalsTouched: 0
+        };
+        
+        setTimeout(() => {
+          initializeScatteredFlowers();
+          spawnAssessmentCoins();
+        }, 1000);
       }
 
-      function generateCharts() {
-        generateFlexWaveformChart();
-        generateIMUTiltChart();
-        generateEngagementPieChart();
-        generateSuccessFailureChart();
+      function actuallyStartGame() {
+        gameStarted = true;
+        gameState = 'playing';
+        
+        // Start the timer and show it
+        document.getElementById('session-timer').style.display = 'block';
+        startSessionTimer();
+        
+        updateModeIndicator();
       }
 
-      function generateFlexWaveformChart() {
-        const ctx = document.getElementById('flex-waveform-chart').getContext('2d');
+      function startDemo() {
+        // Reset all states
+        forceExitGolf('demo start');
+        movementSystem.currentSpeed = 0;
+        movementSystem.targetSpeed = 0;
+        movementSystem.isActive = false;
+        sensorThresholds.flexRequired = false;
+        sensorThresholds.imuRequired = false;
+        gameStarted = true; // Demo starts immediately
         
-        if (sensorDataHistory.timestamps.length === 0) return;
-        
-        // Sample data points for better performance
-        const sampledTimestamps = sensorDataHistory.timestamps.filter((_, i) => i % 10 === 0);
-        const sampledFlex1 = sensorDataHistory.flex1.filter((_, i) => i % 10 === 0);
-        const sampledFlex2 = sensorDataHistory.flex2.filter((_, i) => i % 10 === 0);
-        const sampledFlex3 = sensorDataHistory.flex3.filter((_, i) => i % 10 === 0);
-        
-        new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: sampledTimestamps.map(t => (t / 60).toFixed(1) + 'm'),
-            datasets: [
-              {
-                label: 'Flex Sensor 1',
-                data: sampledFlex1,
-                borderColor: '#FF6384',
-                backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                borderWidth: 2,
-                fill: false
-              },
-              {
-                label: 'Flex Sensor 2',
-                data: sampledFlex2,
-                borderColor: '#36A2EB',
-                backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                borderWidth: 2,
-                fill: false
-              },
-              {
-                label: 'Flex Sensor 3',
-                data: sampledFlex3,
-                borderColor: '#4BC0C0',
-                backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                borderWidth: 2,
-                fill: false
-              }
-            ]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              x: { title: { display: true, text: 'Time (minutes)' } },
-              y: { title: { display: true, text: 'Flex Value (ADC)' } }
-            },
-            plugins: {
-              title: { display: true, text: 'Finger Bending Cycles - FINAL FIX (No Auto-Collection)' }
-            }
+        therapeuticGolf = {
+          sessionData: {
+            patientName: 'Demo User',
+            patientId: 'DEMO',
+            startTime: new Date(),
+            totalShots: 0,
+            successfulShots: 0,
+            coinsCollected: 0,
+            animalInteractions: 0,
+            explorationDistance: 0,
+            totalDistance: 0,
+            sessionCompleted: false
           }
-        });
+        };
+        
+        updateModeIndicator();
+        
+        document.getElementById('game-overlay').classList.add('hidden');
+        document.getElementById('session-timer').style.display = 'block';
+        document.getElementById('performance-hud').style.display = 'block';
+        document.getElementById('mode-indicator').style.display = 'block';
+        
+        gameState = 'demo';
+        
+        setTimeout(() => {
+          initializeScatteredFlowers();
+        }, 1000);
       }
 
-      function generateIMUTiltChart() {
-        const ctx = document.getElementById('imu-tilt-chart').getContext('2d');
+      function newSession() {
+        gameState = 'menu';
+        gameStarted = false;
+        forceExitGolf('new session');
+        movementSystem.currentSpeed = 0;
+        movementSystem.targetSpeed = 0;
+        movementSystem.isActive = false;
         
-        if (sensorDataHistory.timestamps.length === 0) return;
+        if (sessionTimer) {
+          clearInterval(sessionTimer);
+        }
         
-        const sampledTimestamps = sensorDataHistory.timestamps.filter((_, i) => i % 10 === 0);
-        const sampledIMU = sensorDataHistory.imuTilt.filter((_, i) => i % 10 === 0);
+        document.getElementById('game-overlay').classList.remove('hidden');
+        document.getElementById('golf-power-meter').style.display = 'none';
         
-        new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: sampledTimestamps.map(t => (t / 60).toFixed(1) + 'm'),
-            datasets: [
-              {
-                label: 'IMU Tilt Angle',
-                data: sampledIMU,
-                borderColor: '#FF9F40',
-                backgroundColor: 'rgba(255, 159, 64, 0.1)',
-                borderWidth: 2,
-                fill: true
-              }
-            ]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              x: { title: { display: true, text: 'Time (minutes)' } },
-              y: { title: { display: true, text: 'Tilt Angle (degrees)' } }
-            },
-            plugins: {
-              title: { display: true, text: 'Elbow Range of Motion - FINAL FIX (No Auto-Movement)' }
-            }
-          }
-        });
+        document.getElementById('patient-name').value = '';
+        document.getElementById('patient-id').value = '';
+        
+        document.getElementById('session-timer').style.display = 'none';
+        document.getElementById('performance-hud').style.display = 'none';
+        document.getElementById('mode-indicator').style.display = 'none';
       }
 
-      function generateEngagementPieChart() {
-        const ctx = document.getElementById('engagement-pie-chart').getContext('2d');
-        
-        new Chart(ctx, {
-          type: 'pie',
-          data: {
-            labels: ['Active Time', 'Idle Time'],
-            datasets: [{
-              data: [performanceMetrics.activeTime, performanceMetrics.idleTime],
-              backgroundColor: ['#4CAF50', '#FFC107']
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              title: { display: true, text: 'Session Engagement Distribution - FINAL FIX' },
-              legend: { position: 'bottom' }
-            }
+      function initializeTherapeuticGolf(patientName, patientId) {
+        therapeuticGolf = {
+          sessionData: {
+            patientName: patientName,
+            patientId: patientId,
+            startTime: new Date(),
+            totalShots: 0,
+            successfulShots: 0,
+            coinsCollected: 0,
+            animalInteractions: 0,
+            explorationDistance: 0,
+            totalDistance: 0,
+            sessionCompleted: false
           }
-        });
+        };
       }
 
-      function generateSuccessFailureChart() {
-        const ctx = document.getElementById('success-failure-chart').getContext('2d');
+      // Session timer - 5 MINUTES (300 seconds)
+      function startSessionTimer() {
+        let timeRemaining = 300;
+        const timerDisplay = document.getElementById('time-remaining');
+        const progressBar = document.getElementById('session-progress');
         
-        new Chart(ctx, {
-          type: 'doughnut',
-          data: {
-            labels: ['Successful Actions', 'Failed Attempts'],
-            datasets: [{
-              data: [performanceMetrics.successfulActions, performanceMetrics.missedCues],
-              backgroundColor: ['#4CAF50', '#F44336']
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              title: { display: true, text: 'Task Performance - FINAL FIX (No Auto-Actions)' },
-              legend: { position: 'bottom' }
-            }
+        sessionTimer = setInterval(() => {
+          timeRemaining--;
+          
+          const minutes = Math.floor(timeRemaining / 60);
+          const seconds = timeRemaining % 60;
+          timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          
+          const progress = ((300 - timeRemaining) / 300) * 100;
+          progressBar.style.width = `${progress}%`;
+          
+          if (timeRemaining <= 0) {
+            endSession();
           }
-        });
+        }, 1000);
+      }
+
+      function endSession() {
+        if (sessionTimer) {
+          clearInterval(sessionTimer);
+        }
+        
+        gameState = 'finished';
+        gameStarted = false;
+        forceExitGolf('session end');
+        movementSystem.currentSpeed = 0;
+        movementSystem.targetSpeed = 0;
+        movementSystem.isActive = false;
+        
+        if (therapeuticGolf) {
+          therapeuticGolf.sessionData.sessionCompleted = true;
+        }
+        
+        document.getElementById('session-timer').style.display = 'none';
+        document.getElementById('performance-hud').style.display = 'none';
+        document.getElementById('mode-indicator').style.display = 'none';
+        document.getElementById('golf-power-meter').style.display = 'none';
+        
+        // Simple end message instead of full report
+        alert(`Session Complete!\nTime: 5:00 minutes\nShots: ${performanceMetrics.golfShotsTotal}\nHoles: ${performanceMetrics.golfHolesMade}\nCoins: ${performanceMetrics.coinsCollected}\nAnimals: ${performanceMetrics.animalsTouched}`);
+        
+        // Return to menu
+        newSession();
       }
 
       // Update HUD display
       function updateHUD() {
-        if (!therapeuticGolf || (gameState !== 'playing' && gameState !== 'demo')) return;
+        if (!therapeuticGolf || !gameStarted) return;
         
         document.getElementById('shot-count').textContent = therapeuticGolf.sessionData.totalShots;
-        document.getElementById('accuracy').textContent = 
-          therapeuticGolf.sessionData.totalShots > 0 ? 
-          Math.round((therapeuticGolf.sessionData.successfulShots / therapeuticGolf.sessionData.totalShots) * 100) + '%' : '0%';
+        document.getElementById('hole-count').textContent = performanceMetrics.golfHolesMade;
         document.getElementById('current-score').textContent = 
-          (therapeuticGolf.sessionData.successfulShots * 10) + 
-          (therapeuticGolf.sessionData.coinsCollected * 5) + 
-          (therapeuticGolf.sessionData.animalInteractions * 8);
+          (performanceMetrics.golfHolesMade * 10) + 
+          (performanceMetrics.coinsCollected * 5) + 
+          (performanceMetrics.animalsTouched * 8);
         document.getElementById('exploration-distance').textContent = Math.round(therapeuticGolf.sessionData.explorationDistance) + 'm';
       }
 
-      // =====================================
-      // EXPORT FUNCTIONS
-      // =====================================
-      
-      function exportPDF() {
-        if (!therapeuticGolf) {
-          alert('No session data to export');
-          return;
-        }
-        
-        const sessionData = therapeuticGolf.sessionData;
-        const flex1Avg = sensorDataHistory.flex1.length > 0 ? 
-          sensorDataHistory.flex1.reduce((a, b) => a + b, 0) / sensorDataHistory.flex1.length : 0;
-        const flex2Avg = sensorDataHistory.flex2.length > 0 ?
-          sensorDataHistory.flex2.reduce((a, b) => a + b, 0) / sensorDataHistory.flex2.length : 0;
-        const flex3Avg = sensorDataHistory.flex3.length > 0 ?
-          sensorDataHistory.flex3.reduce((a, b) => a + b, 0) / sensorDataHistory.flex3.length : 0;
-        const imuAvg = sensorDataHistory.imuTilt.length > 0 ?
-          sensorDataHistory.imuTilt.reduce((a, b) => a + b, 0) / sensorDataHistory.imuTilt.length : 0;
-        const successRate = performanceMetrics.totalActions > 0 ? 
-          (performanceMetrics.successfulActions / performanceMetrics.totalActions * 100) : 0;
-        
-        const reportData = `
-VR THERAPEUTIC GOLF ASSESSMENT - FINAL FIXED VERSION REPORT
-==========================================================
-
-FINAL FIXES IMPLEMENTED:
-- ✅ FINAL FIX: ZERO auto-collection (flex threshold: ${sensorThresholds.flexThreshold})
-- ✅ FINAL FIX: ZERO auto-touch (proximity required: ${sensorThresholds.proximityDistance}m)  
-- ✅ FINAL FIX: Golf NEVER gets stuck (forced timeouts + exits)
-- ✅ FINAL FIX: Golf ball ALWAYS returns to tee (guaranteed reset)
-- ✅ FINAL FIX: Higher thresholds prevent accidental triggers
-
-SESSION METADATA:
-- Patient Name: ${sessionData.patientName}
-- Patient ID: ${sessionData.patientId}
-- Assessment Date: ${sessionData.startTime.toLocaleDateString()}
-- Session Duration: ${sessionData.sessionCompleted ? '10:00 minutes' : 'Incomplete'}
-- Task/Game: VR Therapeutic Golf Assessment (FINAL FIXED VERSION)
-- ESP32 Status: ${esp32WebSocket && esp32WebSocket.readyState === WebSocket.OPEN ? 'Connected' : 'Disconnected'}
-
-FINAL FIXED CONTROL THRESHOLDS:
-- Flex Threshold: ${sensorThresholds.flexThreshold} (much higher to prevent auto-collection)
-- IMU Threshold: ${sensorThresholds.imuThreshold} (much higher to prevent auto-movement)
-- Proximity Distance: ${sensorThresholds.proximityDistance}m (reduced for deliberate actions only)
-- Action Cooldown: ${actionCooldown}ms (prevents rapid triggering)
-
-FLEX SENSOR RESULTS:
-- Flex 1: Baseline=${baselineValues.flex1.toFixed(1)}, Avg=${flex1Avg.toFixed(1)}, Peak=${sensorDataHistory.flex1.length > 0 ? Math.max(...sensorDataHistory.flex1).toFixed(1) : '0'}
-- Flex 2: Baseline=${baselineValues.flex2.toFixed(1)}, Avg=${flex2Avg.toFixed(1)}, Peak=${sensorDataHistory.flex2.length > 0 ? Math.max(...sensorDataHistory.flex2).toFixed(1) : '0'}
-- Flex 3: Baseline=${baselineValues.flex3.toFixed(1)}, Avg=${flex3Avg.toFixed(1)}, Peak=${sensorDataHistory.flex3.length > 0 ? Math.max(...sensorDataHistory.flex3).toFixed(1) : '0'}
-
-IMU RESULTS:
-- Baseline Tilt: ${baselineValues.imuTilt.toFixed(1)}°
-- Average Tilt: ${imuAvg.toFixed(1)}°
-- Max ROM: ${sensorDataHistory.imuTilt.length > 0 ? (Math.max(...sensorDataHistory.imuTilt) - Math.min(...sensorDataHistory.imuTilt)).toFixed(1) : '0'}°
-- Repetitions: ${sensorDataHistory.imuTilt.filter(val => val > 8).length}
-
-PERFORMANCE & ENGAGEMENT:
-- Task Success Rate: ${successRate.toFixed(1)}%
-- Missed Cues: ${performanceMetrics.missedCues}
-- Active Time: ${(performanceMetrics.activeTime / 60).toFixed(1)} minutes
-- Idle Time: ${(performanceMetrics.idleTime / 60).toFixed(1)} minutes
-- Engagement Ratio: ${((performanceMetrics.activeTime / (performanceMetrics.activeTime + performanceMetrics.idleTime)) * 100).toFixed(1)}%
-
-GAME PERFORMANCE:
-- Golf Shots: ${sessionData.totalShots}
-- Successful Shots: ${sessionData.successfulShots}
-- Coins Collected: ${sessionData.coinsCollected} (FINAL FIX: NO AUTO-COLLECTION)
-- Animal Interactions: ${sessionData.animalInteractions} (FINAL FIX: NO AUTO-TOUCH)
-- Distance Traveled: ${Math.round(sessionData.totalDistance)}m
-
-CLINICAL NOTES:
-${document.getElementById('physician-notes').value || 'No clinical notes provided'}
-
-Report generated: ${new Date().toLocaleString()}
-FINAL FIXED VERSION - All major issues permanently resolved
-        `;
-        
-        const blob = new Blob([reportData], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `VR_Golf_FINAL_FIXED_Report_${sessionData.patientId}_${new Date().toISOString().split('T')[0]}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
-
-      function exportCSV() {
-        if (!therapeuticGolf || sensorDataHistory.timestamps.length === 0) {
-          alert('No session data to export');
-          return;
-        }
-        
-        const sessionData = therapeuticGolf.sessionData;
-        
-        // Create detailed CSV with all sensor data
-        let csvContent = 'Timestamp,Flex1,Flex2,Flex3,IMU_Tilt,Movement_Speed,Action_Type,Auto_Collection_Fixed,Golf_State\n';
-        
-        for (let i = 0; i < sensorDataHistory.timestamps.length; i++) {
-          const actionEvent = sensorDataHistory.actionEvents.find(
-            event => Math.abs(event.timestamp - sensorDataHistory.timestamps[i]) < 0.1
-          );
-          const actionType = actionEvent ? actionEvent.type : '';
-          const movementSpeed = movementSystem.isActive ? movementSystem.currentSpeed.toFixed(3) : '0';
-          
-          csvContent += `${sensorDataHistory.timestamps[i].toFixed(2)},` +
-                       `${sensorDataHistory.flex1[i]},` +
-                       `${sensorDataHistory.flex2[i]},` +
-                       `${sensorDataHistory.flex3[i]},` +
-                       `${sensorDataHistory.imuTilt[i]},` +
-                       `${movementSpeed},` +
-                       `${actionType},` +
-                       `FINAL_FIXED,` +
-                       `${golfState}\n`;
-        }
-        
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `VR_Golf_FINAL_FIXED_SensorData_${sessionData.patientId}_${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
-
-      // =====================================
-      // COIN AND FLOWER SPAWNING
-      // =====================================
-      
+      // COIN SPAWNING
       function spawnNewCoin() {
         const coinsContainer = document.getElementById('assessment-coins');
         if (!coinsContainer) return;
@@ -2365,7 +1565,7 @@ FINAL FIXED VERSION - All major issues permanently resolved
         
         const coinContainer = document.createElement('a-entity');
         coinContainer.setAttribute('class', 'assessment-coin gazeable');
-        coinContainer.setAttribute('position', `${x} 0.1 ${z}`);
+        coinContainer.setAttribute('position', `${x} 0.8 ${z}`);
         
         const gltfModel = document.createElement('a-entity');
         gltfModel.setAttribute('gltf-model', 'https://jst0605-coder.github.io/jst/Coin.glb');
@@ -2491,8 +1691,6 @@ FINAL FIXED VERSION - All major issues permanently resolved
             placedFlowers.push({ x, z });
           }
         }
-        
-        console.log(`🌸 ${placedFlowers.length} flowers spawned (final fixed version)`);
       }
 
       // Animal AI Component
@@ -2640,10 +1838,6 @@ FINAL FIXED VERSION - All major issues permanently resolved
         }
       });
 
-      // =====================================
-      // INITIALIZATION AND VR DETECTION
-      // =====================================
-      
       // VR Mode Detection
       function detectVRMode() {
         const scene = document.querySelector('a-scene');
@@ -2651,53 +1845,17 @@ FINAL FIXED VERSION - All major issues permanently resolved
           scene.addEventListener('enter-vr', () => {
             isInVRMode = true;
             document.body.classList.add('vr-mode');
-            console.log('🥽 Entered VR mode - final fixed version active');
           });
           
           scene.addEventListener('exit-vr', () => {
             isInVRMode = false;
             document.body.classList.remove('vr-mode');
-            console.log('🖥️ Exited VR mode - final fixed version continues');
           });
         }
       }
 
       // Initialize everything when page loads
       document.addEventListener('DOMContentLoaded', function() {
-        console.log('🚀 VR Therapeutic Golf World FINAL FIXED VERSION loaded successfully!');
-        console.log('');
-        console.log('✅ FINAL FIXES IMPLEMENTED:');
-        console.log('  🚫 ZERO AUTO-COLLECTION: Coins require flex + close proximity');
-        console.log('  🚫 ZERO AUTO-TOUCH: Animals require flex + close proximity');
-        console.log('  ⛳ GOLF NEVER STUCK: Forced timeouts and exits prevent hanging');
-        console.log('  🔄 BALL ALWAYS RETURNS: Guaranteed reset system with multiple attempts');
-        console.log('  🎞️ ALL ANIMATIONS FIXED: No more easing errors');
-        console.log('  🏃 SMOOTH MOVEMENT: Optimized movement system');
-        console.log('');
-        console.log('🎮 FINAL FIXED CONTROLS:');
-        console.log('  • 🚶 WALK: Smooth movement only when elbow deliberately bent (threshold: 15°)');
-        console.log('  • 💰 COLLECT: Must flex finger (60+) AND be within 2.5m proximity');
-        console.log('  • 🐾 TOUCH: Must flex finger (60+) AND be within 2.5m proximity');
-        console.log('  • 🎯 GOLF: Look at ball + hold finger flex');
-        console.log('  • ⚡ POWER: Add elbow movement while holding flex');
-        console.log('  • 🏌️ SWING: Release either control to swing');
-        console.log('  • 🔄 TIMEOUT: Golf auto-exits after 10s to prevent getting stuck');
-        console.log('  • 🔄 BALL RESET: Ball GUARANTEED to return to tee after every shot');
-        console.log('');
-        console.log('🔧 FINAL FIXED THRESHOLDS:');
-        console.log(`  • Flex Threshold: ${sensorThresholds.flexThreshold} (much higher - no auto-collection)`);
-        console.log(`  • IMU Threshold: ${sensorThresholds.imuThreshold} (much higher - no auto-movement)`);
-        console.log(`  • Proximity Distance: ${sensorThresholds.proximityDistance}m (much smaller - deliberate only)`);
-        console.log(`  • Action Cooldown: ${actionCooldown}ms (prevents rapid triggers)`);
-        console.log('');
-        console.log('🛡️ SAFEGUARDS IMPLEMENTED:');
-        console.log('  • Golf timeout prevents infinite hanging in golf mode');
-        console.log('  • Forced golf exit function ensures return to normal mode');
-        console.log('  • Multiple ball reset attempts guarantee ball returns to tee');
-        console.log('  • Higher thresholds eliminate accidental auto-collection');
-        console.log('  • Strict proximity requirements for all interactions');
-        console.log('');
-        
         updateModeIndicator();
         detectVRMode();
         
@@ -2710,7 +1868,7 @@ FINAL FIXED VERSION - All major issues permanently resolved
                 permissionRequested = true;
                 DeviceOrientationEvent.requestPermission()
                   .then(response => {
-                    console.log('📱 Device orientation permission:', response);
+                    console.log('Device orientation permission:', response);
                   })
                   .catch(console.error);
                 document.removeEventListener('touchstart', requestPermissionOnce);
@@ -2720,7 +1878,7 @@ FINAL FIXED VERSION - All major issues permanently resolved
         }
       });
 
-      // Enhanced coin spawning (optimized intervals)
+      // Enhanced coin spawning
       setInterval(() => {
         if (gameState === 'playing') {
           const existingCoins = document.querySelectorAll('.assessment-coin').length;
@@ -2733,7 +1891,7 @@ FINAL FIXED VERSION - All major issues permanently resolved
             }
           }
         }
-      }, 10000);
+      }, 8000);
 
       // Keep WebSocket connection alive
       setInterval(() => {
@@ -2746,47 +1904,7 @@ FINAL FIXED VERSION - All major issues permanently resolved
         }
       }, 30000);
 
-      // Performance monitoring (disabled by default)
-      let performanceMonitor = {
-        enabled: false,
-        frameCount: 0,
-        lastTime: performance.now(),
-        
-        tick: function() {
-          if (!this.enabled) return;
-          
-          this.frameCount++;
-          const now = performance.now();
-          
-          if (now - this.lastTime >= 5000) {
-            const fps = Math.round((this.frameCount * 1000) / (now - this.lastTime));
-            console.log(`🎮 Performance: ${fps}fps | Movement: ${movementSystem.isActive} | Speed: ${movementSystem.currentSpeed.toFixed(3)} | Golf: ${golfState}`);
-            
-            this.frameCount = 0;
-            this.lastTime = now;
-          }
-          
-          requestAnimationFrame(() => this.tick());
-        }
-      };
-      
-      // Start performance monitoring if enabled
-      if (performanceMonitor.enabled) {
-        performanceMonitor.tick();
-      }
-
-      // Additional safeguard: Force exit golf mode every 15 seconds if stuck
-      setInterval(() => {
-        if (golfState !== 'none') {
-          const now = Date.now();
-          if (now - lastActionTime > 15000) {
-            console.log('🚨 EMERGENCY: Golf mode stuck for 15+ seconds - forcing exit');
-            forceExitGolf('emergency timeout - stuck for 15+ seconds');
-          }
-        }
-      }, 5000);
-
-      // Final safeguard: Ball reset check every 30 seconds
+      // Ball reset safeguard
       setInterval(() => {
         if (gameState === 'playing' || gameState === 'demo') {
           const easyBall = document.getElementById('easy-ball');
@@ -2795,16 +1913,14 @@ FINAL FIXED VERSION - All major issues permanently resolved
           if (easyBall) {
             const easyPos = easyBall.getAttribute('position');
             if (easyPos.y > 2 || Math.abs(easyPos.x) > 5 || Math.abs(easyPos.z - 12) > 5) {
-              console.log('🚨 SAFEGUARD: Easy ball out of position - forcing reset');
-              forcedResetGolfBallToTee(true);
+              guaranteedBallResetToTee(true);
             }
           }
           
           if (challengingBall) {
             const challengingPos = challengingBall.getAttribute('position');
             if (challengingPos.y > 2 || Math.abs(challengingPos.x) > 5 || Math.abs(challengingPos.z - 15) > 5) {
-              console.log('🚨 SAFEGUARD: Challenging ball out of position - forcing reset');
-              forcedResetGolfBallToTee(false);
+              guaranteedBallResetToTee(false);
             }
           }
         }
