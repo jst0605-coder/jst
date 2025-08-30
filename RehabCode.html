@@ -814,7 +814,7 @@
           esp32WebSocket.close();
         }
         
-        esp32WebSocket = new WebSocket(`ws://${ip}:81/`);
+        esp32WebSocket = new WebSocket(`wss://${ip}:81/`);
         
         esp32WebSocket.onopen = () => {
           statusDiv.textContent = '🟢 Connected successfully!';
@@ -1928,4 +1928,5 @@
 
     </script>
   </body>
+
 </html>
