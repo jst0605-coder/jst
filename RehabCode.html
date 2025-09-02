@@ -51,11 +51,18 @@
         border-radius: 10px;
         z-index: 100;
         border: 2px solid #4CAF50;
+        max-width: 300px;
+        word-wrap: break-word;
       }
       
       .esp-status.disconnected {
         border-color: #F44336;
         color: #F44336;
+      }
+      
+      .esp-status.error {
+        border-color: #FF9800;
+        color: #FF9800;
       }
       
       .gaze-cursor {
@@ -263,6 +270,23 @@
         color: #4CAF50;
         font-weight: bold;
       }
+
+      /* Debug info */
+      .debug-info {
+        position: fixed;
+        top: 300px;
+        left: 20px;
+        background: rgba(0,0,0,0.9);
+        color: #00FF00;
+        padding: 10px;
+        border-radius: 5px;
+        font-family: monospace;
+        font-size: 10px;
+        z-index: 100;
+        max-width: 250px;
+        word-wrap: break-word;
+        display: none;
+      }
     </style>
   </head>
   <body>
@@ -273,6 +297,9 @@
     <div class="esp-status disconnected" id="esp-status">
       Dashboard: Disconnected
     </div>
+
+    <!-- Debug Info -->
+    <div class="debug-info" id="debug-info"></div>
 
     <!-- Real-time Sensor Display -->
     <div class="sensor-display" id="sensor-display" style="display: none;">
@@ -326,14 +353,17 @@
           <input type="text" id="esp-ip" placeholder="Dashboard URL (e.g., https://ba7e2c9510e5.ngrok-free.app)" value="https://ba7e2c9510e5.ngrok-free.app">
           <br>
           <button id="connect-esp" class="btn btn-secondary" onclick="connectToDashboard()">Connect to Dashboard</button>
+          <button id="test-endpoint" class="btn btn-secondary" onclick="testEndpoint()">Test Endpoint</button>
+          <button id="toggle-debug" class="btn btn-secondary" onclick="toggleDebug()">Toggle Debug</button>
           <div id="connection-status" style="margin-top: 10px; color: #FFD700;"></div>
           
           <div class="dashboard-instructions">
             <strong>Dashboard Integration:</strong><br>
             1. Your VR Rehab Dashboard should be running<br>
             2. Enter the ngrok HTTPS URL above<br>
-            3. Click Connect - VR game will receive real sensor data<br>
-            4. Physical sensor movements will trigger VR actions<br>
+            3. Click "Test Endpoint" first to check connectivity<br>
+            4. Then click "Connect" - VR game will receive real sensor data<br>
+            5. Physical sensor movements will trigger VR actions<br>
             <strong>Default URL pre-filled for quick connection!</strong>
           </div>
         </div>
@@ -801,7 +831,10 @@
       let sessionTimer = null;
       let gameState = 'menu';
       let lastSensorData = null;
-      let gameStarted = false; // New flag to track if game has started
+      let gameStarted = false;
+      let debugMode = false;
+      let connectionAttempts = 0;
+      let maxConnectionAttempts = 3;
       
       // OPTIMIZED MOVEMENT SYSTEM
       let movementSystem = {
@@ -829,8 +862,8 @@
       
       // SENSOR THRESHOLD SYSTEM - ADJUSTED FOR DASHBOARD DATA
       let sensorThresholds = {
-        flexThreshold: 25,      // Lowered from 35 for better sensitivity
-        imuThreshold: 8,        // Lowered from 10 for better sensitivity  
+        flexThreshold: 25,      
+        imuThreshold: 8,        
         proximityDistance: 3.5,
         flexRequired: false,
         imuRequired: false
@@ -847,28 +880,138 @@
         animalsTouched: 0
       };
 
-      // DASHBOARD CONNECTION - MODIFIED TO CONNECT TO YOUR DASHBOARD
-      function connectToDashboard() {
+      // DEBUG FUNCTIONS
+      function updateDebugInfo(message, type = 'info') {
+        if (!debugMode) return;
+        
+        const debugDiv = document.getElementById('debug-info');
+        const timestamp = new Date().toLocaleTimeString();
+        
+        if (debugDiv) {
+          debugDiv.innerHTML += `<div style="color: ${type === 'error' ? '#FF5555' : type === 'success' ? '#55FF55' : '#00FF00'}">[${timestamp}] ${message}</div>`;
+          debugDiv.scrollTop = debugDiv.scrollHeight;
+          
+          // Keep only last 20 lines
+          const lines = debugDiv.children;
+          while (lines.length > 20) {
+            lines[0].remove();
+          }
+        }
+      }
+
+      function toggleDebug() {
+        debugMode = !debugMode;
+        const debugDiv = document.getElementById('debug-info');
+        if (debugDiv) {
+          debugDiv.style.display = debugMode ? 'block' : 'none';
+        }
+        
+        if (debugMode) {
+          updateDebugInfo('Debug mode enabled');
+        }
+      }
+
+      // TEST ENDPOINT FUNCTION
+      async function testEndpoint() {
         const ipInput = document.getElementById('esp-ip');
         const statusDiv = document.getElementById('connection-status');
-        const espStatus = document.getElementById('esp-status');
         
-        // Use the ngrok URL provided
         const dashboardUrl = ipInput ? ipInput.value.trim() : '';
         
         if (!dashboardUrl) {
           statusDiv.textContent = 'Please enter dashboard URL';
+          statusDiv.style.color = '#F44336';
           return;
         }
         
         if (!dashboardUrl.startsWith('https://') && !dashboardUrl.startsWith('http://')) {
           statusDiv.textContent = 'Please enter valid URL (https:// or http://)';
+          statusDiv.style.color = '#F44336';
+          return;
+        }
+        
+        statusDiv.textContent = `Testing endpoint: ${dashboardUrl}/sensor-data...`;
+        statusDiv.style.color = '#FFD700';
+        
+        updateDebugInfo(`Testing endpoint: ${dashboardUrl}/sensor-data`);
+        
+        try {
+          const testResponse = await fetch(`${dashboardUrl}/sensor-data`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            mode: 'cors',
+            credentials: 'omit'
+          });
+          
+          updateDebugInfo(`Test response status: ${testResponse.status}`);
+          updateDebugInfo(`Test response headers: ${testResponse.headers.get('content-type')}`);
+          
+          // Get the actual response text to see what's being returned
+          const responseText = await testResponse.text();
+          updateDebugInfo(`Response preview: ${responseText.substring(0, 200)}...`);
+          
+          if (!testResponse.ok) {
+            throw new Error(`HTTP ${testResponse.status}: ${testResponse.statusText}`);
+          }
+          
+          // Check content type
+          const contentType = testResponse.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            statusDiv.textContent = `❌ Endpoint returns ${contentType || 'unknown'} instead of JSON`;
+            statusDiv.style.color = '#F44336';
+            updateDebugInfo(`Error: Expected JSON, got ${contentType}`, 'error');
+            return;
+          }
+          
+          // Try to parse as JSON
+          try {
+            const jsonData = JSON.parse(responseText);
+            statusDiv.textContent = `✅ Endpoint working! Found: ${Object.keys(jsonData).join(', ')}`;
+            statusDiv.style.color = '#4CAF50';
+            updateDebugInfo(`Success: Valid JSON response`, 'success');
+            updateDebugInfo(`JSON keys: ${Object.keys(jsonData).join(', ')}`, 'success');
+          } catch (parseError) {
+            statusDiv.textContent = `❌ Endpoint returns invalid JSON`;
+            statusDiv.style.color = '#F44336';
+            updateDebugInfo(`Parse error: ${parseError.message}`, 'error');
+          }
+          
+        } catch (error) {
+          statusDiv.textContent = `❌ Connection failed: ${error.message}`;
+          statusDiv.style.color = '#F44336';
+          updateDebugInfo(`Connection error: ${error.message}`, 'error');
+        }
+      }
+
+      // ENHANCED DASHBOARD CONNECTION WITH BETTER ERROR HANDLING
+      function connectToDashboard() {
+        const ipInput = document.getElementById('esp-ip');
+        const statusDiv = document.getElementById('connection-status');
+        const espStatus = document.getElementById('esp-status');
+        
+        const dashboardUrl = ipInput ? ipInput.value.trim() : '';
+        
+        if (!dashboardUrl) {
+          statusDiv.textContent = 'Please enter dashboard URL';
+          statusDiv.style.color = '#F44336';
+          return;
+        }
+        
+        if (!dashboardUrl.startsWith('https://') && !dashboardUrl.startsWith('http://')) {
+          statusDiv.textContent = 'Please enter valid URL (https:// or http://)';
+          statusDiv.style.color = '#F44336';
           return;
         }
         
         dashboardBaseURL = dashboardUrl;
+        connectionAttempts = 0;
         statusDiv.textContent = `Connecting to ${dashboardUrl}...`;
         statusDiv.style.color = '#FFD700';
+        
+        updateDebugInfo(`Starting connection to: ${dashboardUrl}`);
         
         // Stop any existing polling
         if (dashboardPollingInterval) {
@@ -876,65 +1019,88 @@
         }
         
         // Start polling dashboard for sensor data with enhanced error handling
-        dashboardPollingInterval = setInterval(() => {
-          fetch(`${dashboardBaseURL}/sensor-data`, {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-            },
-            mode: 'cors', // Enable CORS
-            credentials: 'omit' // Don't send credentials
-          })
-            .then(response => {
-              console.log('Response status:', response.status);
-              console.log('Response headers:', response.headers.get('content-type'));
-              
-              if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        dashboardPollingInterval = setInterval(async () => {
+          try {
+            updateDebugInfo(`Polling attempt ${connectionAttempts + 1}`);
+            
+            const response = await fetch(`${dashboardBaseURL}/sensor-data`, {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+              },
+              mode: 'cors',
+              credentials: 'omit',
+              cache: 'no-cache' // Prevent caching issues
+            });
+            
+            updateDebugInfo(`Response status: ${response.status}`);
+            const contentType = response.headers.get('content-type');
+            updateDebugInfo(`Content-Type: ${contentType}`);
+            
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            // Check if response is actually JSON
+            if (!contentType || !contentType.includes('application/json')) {
+              // Get response text for debugging
+              const responseText = await response.text();
+              updateDebugInfo(`Non-JSON response: ${responseText.substring(0, 100)}...`, 'error');
+              throw new Error(`Expected JSON, got ${contentType}. Response: ${responseText.substring(0, 100)}...`);
+            }
+            
+            const data = await response.json();
+            updateDebugInfo(`Parsed JSON successfully: ${Object.keys(data).join(', ')}`, 'success');
+            
+            // Validate data structure
+            if (!data.flexAngles || typeof data.tilt === 'undefined') {
+              updateDebugInfo(`Invalid data structure: ${JSON.stringify(data)}`, 'error');
+              throw new Error('Invalid sensor data structure - missing flexAngles or tilt');
+            }
+            
+            // First successful connection
+            if (espStatus.className.includes('disconnected') || espStatus.className.includes('error')) {
+              statusDiv.textContent = 'Connected to Dashboard!';
+              statusDiv.style.color = '#4CAF50';
+              espStatus.textContent = 'Dashboard: Connected';
+              espStatus.className = 'esp-status';
+              document.getElementById('sensor-display').style.display = 'block';
+              updateDebugInfo('Dashboard connected successfully', 'success');
+              connectionAttempts = 0; // Reset attempts on success
+            }
+            
+            lastSensorData = data;
+            updateSensorDisplay(data);
+            processDashboardSensorData(data);
+            
+          } catch (error) {
+            connectionAttempts++;
+            updateDebugInfo(`Connection attempt ${connectionAttempts} failed: ${error.message}`, 'error');
+            
+            // Update status based on error type
+            if (error.message.includes('JSON')) {
+              if (!espStatus.className.includes('error')) {
+                statusDiv.textContent = `❌ Dashboard returning HTML instead of JSON`;
+                statusDiv.style.color = '#FF9800';
+                espStatus.textContent = 'Dashboard: Wrong Response Type';
+                espStatus.className = 'esp-status error';
               }
-              
-              // Check if response is actually JSON
-              const contentType = response.headers.get('content-type');
-              if (!contentType || !contentType.includes('application/json')) {
-                throw new Error('Response is not JSON - received: ' + contentType);
-              }
-              
-              return response.json();
-            })
-            .then(data => {
-              console.log('Received sensor data:', data);
-              
-              // Validate data structure
-              if (!data.flexAngles || typeof data.tilt === 'undefined') {
-                throw new Error('Invalid sensor data structure');
-              }
-              
-              // First successful connection
-              if (espStatus.className.includes('disconnected')) {
-                statusDiv.textContent = 'Connected to Dashboard!';
-                statusDiv.style.color = '#4CAF50';
-                espStatus.textContent = 'Dashboard: Connected';
-                espStatus.className = 'esp-status';
-                document.getElementById('sensor-display').style.display = 'block';
-                console.log('Dashboard connected successfully');
-              }
-              
-              lastSensorData = data;
-              updateSensorDisplay(data);
-              processDashboardSensorData(data);
-            })
-            .catch(error => {
-              console.error('Dashboard connection error:', error);
+            } else {
               if (!espStatus.className.includes('disconnected')) {
-                statusDiv.textContent = `Connection failed: ${error.message}`;
+                statusDiv.textContent = `❌ Connection failed: ${error.message.substring(0, 50)}`;
                 statusDiv.style.color = '#F44336';
                 espStatus.textContent = 'Dashboard: Connection Error';
                 espStatus.className = 'esp-status disconnected';
-                document.getElementById('sensor-display').style.display = 'none';
               }
-            });
-        }, 500); // Poll every 500ms
+            }
+            
+            // Hide sensor display on persistent errors
+            if (connectionAttempts >= maxConnectionAttempts) {
+              document.getElementById('sensor-display').style.display = 'none';
+            }
+          }
+        }, 1000); // Poll every 1 second (reduced from 500ms)
       }
 
       // UPDATE SENSOR DISPLAY
@@ -995,8 +1161,8 @@
         
         // MOVEMENT: Only when IMU is deliberately activated AND not in golf mode
         if (imuActiveState && golfState === 'none') {
-          const tiltIntensity = Math.min(absTilt / 20, 1.0); // Adjusted for better responsiveness
-          const targetSpeed = 0.15 + (tiltIntensity * 0.5); // Slightly faster movement
+          const tiltIntensity = Math.min(absTilt / 20, 1.0);
+          const targetSpeed = 0.15 + (tiltIntensity * 0.5);
           updateSmoothMovement(targetSpeed);
           performanceMetrics.totalActions++;
         } else {
@@ -1312,6 +1478,7 @@
         if (challengingBall) challengingBall.removeAttribute('animation__glow');
         
         updateModeIndicator();
+        updateDebugInfo(`Golf exit: ${reason}`);
       }
 
       // COIN COLLECTION
@@ -1365,6 +1532,8 @@
       function collectCoin(coin) {
         if (!coin || !coin.parentNode || (gameState !== 'playing' && gameState !== 'demo')) return;
         
+        updateDebugInfo(`Coin collected at ${coin.getAttribute('position').x.toFixed(1)}, ${coin.getAttribute('position').z.toFixed(1)}`, 'success');
+        
         coin.setAttribute('animation__collect', {
           property: 'position',
           to: `${coin.getAttribute('position').x} 3 ${coin.getAttribute('position').z}`,
@@ -1397,6 +1566,8 @@
 
       function touchAnimal(animal) {
         if (!animal || (gameState !== 'playing' && gameState !== 'demo')) return;
+        
+        updateDebugInfo(`Animal touched: ${animal.getAttribute('gltf-model').split('/').pop()}`, 'success');
         
         animal.setAttribute('animation__touch', {
           property: 'scale',
@@ -1470,6 +1641,8 @@
           return;
         }
         
+        updateDebugInfo(`Starting session for ${patientName} (${patientId})`);
+        
         initializeTherapeuticGolf(patientName, patientId);
         
         // Reset all states
@@ -1506,6 +1679,8 @@
         gameStarted = true;
         gameState = 'playing';
         
+        updateDebugInfo('Game started - walking detected!', 'success');
+        
         // Start the timer and show it
         document.getElementById('session-timer').style.display = 'block';
         startSessionTimer();
@@ -1514,6 +1689,8 @@
       }
 
       function startDemo() {
+        updateDebugInfo('Demo mode started');
+        
         // Reset all states
         forceExitGolf('demo start');
         movementSystem.currentSpeed = 0;
@@ -1560,6 +1737,8 @@
         movementSystem.targetSpeed = 0;
         movementSystem.isActive = false;
         
+        updateDebugInfo('New session - resetting all states');
+        
         if (sessionTimer) {
           clearInterval(sessionTimer);
         }
@@ -1568,6 +1747,7 @@
         if (dashboardPollingInterval) {
           clearInterval(dashboardPollingInterval);
           dashboardPollingInterval = null;
+          updateDebugInfo('Dashboard polling stopped');
         }
         
         document.getElementById('game-overlay').classList.remove('hidden');
@@ -1633,6 +1813,8 @@
         movementSystem.targetSpeed = 0;
         movementSystem.isActive = false;
         
+        updateDebugInfo('Session completed', 'success');
+        
         if (therapeuticGolf) {
           therapeuticGolf.sessionData.sessionCompleted = true;
         }
@@ -1694,6 +1876,8 @@
           }
         }
         
+        updateDebugInfo(`Spawning coin at ${x.toFixed(1)}, ${z.toFixed(1)}`);
+        
         const coinContainer = document.createElement('a-entity');
         coinContainer.setAttribute('class', 'assessment-coin gazeable');
         coinContainer.setAttribute('position', `${x} 0.8 ${z}`);
@@ -1730,6 +1914,7 @@
 
       function spawnAssessmentCoins() {
         const coinsToSpawn = 8 + Math.floor(Math.random() * 5);
+        updateDebugInfo(`Spawning ${coinsToSpawn} assessment coins`);
         
         for (let i = 0; i < coinsToSpawn; i++) {
           setTimeout(() => {
@@ -1822,6 +2007,8 @@
             placedFlowers.push({ x, z });
           }
         }
+        
+        updateDebugInfo(`Placed ${placedFlowers.length} flowers`);
       }
 
       // Animal AI Component
@@ -1976,11 +2163,13 @@
           scene.addEventListener('enter-vr', () => {
             isInVRMode = true;
             document.body.classList.add('vr-mode');
+            updateDebugInfo('Entered VR mode');
           });
           
           scene.addEventListener('exit-vr', () => {
             isInVRMode = false;
             document.body.classList.remove('vr-mode');
+            updateDebugInfo('Exited VR mode');
           });
         }
       }
@@ -1990,16 +2179,20 @@
         updateModeIndicator();
         detectVRMode();
         
+        updateDebugInfo('VR Therapeutic Golf initialized');
+        
         // Auto-connect to dashboard if URL is pre-filled
         const dashboardInput = document.getElementById('esp-ip');
         if (dashboardInput && dashboardInput.value.trim()) {
           setTimeout(() => {
+            updateDebugInfo('Auto-connecting to pre-filled dashboard URL');
             connectToDashboard();
           }, 1000);
         }
         
         // Mobile VR support
         if (/Android|iPhone|iPad/.test(navigator.userAgent)) {
+          updateDebugInfo('Mobile device detected - requesting orientation permission');
           if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
             let permissionRequested = false;
             document.addEventListener('touchstart', function requestPermissionOnce() {
@@ -2007,9 +2200,11 @@
                 permissionRequested = true;
                 DeviceOrientationEvent.requestPermission()
                   .then(response => {
-                    console.log('Device orientation permission:', response);
+                    updateDebugInfo(`Device orientation permission: ${response}`, response === 'granted' ? 'success' : 'error');
                   })
-                  .catch(console.error);
+                  .catch(error => {
+                    updateDebugInfo(`Permission error: ${error.message}`, 'error');
+                  });
                 document.removeEventListener('touchstart', requestPermissionOnce);
               }
             });
@@ -2024,6 +2219,8 @@
           
           if (existingCoins < 8) {
             const coinsToSpawn = Math.min(2, 12 - existingCoins);
+            
+            updateDebugInfo(`Auto-spawning ${coinsToSpawn} coins (${existingCoins} existing)`);
             
             for (let i = 0; i < coinsToSpawn; i++) {
               setTimeout(() => spawnNewCoin(), i * 800);
@@ -2041,6 +2238,7 @@
           if (easyBall) {
             const easyPos = easyBall.getAttribute('position');
             if (easyPos.y > 2 || Math.abs(easyPos.x) > 5 || Math.abs(easyPos.z - 12) > 5) {
+              updateDebugInfo('Easy ball reset triggered');
               guaranteedBallResetToTee(true);
             }
           }
@@ -2048,6 +2246,7 @@
           if (challengingBall) {
             const challengingPos = challengingBall.getAttribute('position');
             if (challengingPos.y > 2 || Math.abs(challengingPos.x) > 5 || Math.abs(challengingPos.z - 15) > 5) {
+              updateDebugInfo('Challenging ball reset triggered');
               guaranteedBallResetToTee(false);
             }
           }
