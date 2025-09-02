@@ -742,7 +742,8 @@
 
     <script>
       // Global variables
-      let esp32WebSocket = null;
+      let esp32PollingInterval = null;
+      let esp32IP = null;
       let therapeuticGolf = null;
       let sessionTimer = null;
       let gameState = 'menu';
@@ -793,7 +794,7 @@
         animalsTouched: 0
       };
 
-      // ESP32 Connection
+      // ESP32 Connection - CHANGED TO HTTP POLLING
       function connectESP32() {
         const ipInput = document.getElementById('esp-ip');
         const statusDiv = document.getElementById('connection-status');
@@ -806,64 +807,62 @@
           return;
         }
         
+        esp32IP = ip;
         statusDiv.textContent = `Connecting to ${ip}...`;
         statusDiv.style.color = '#FFD700';
         
-        if (esp32WebSocket) {
-          esp32WebSocket.close();
+        // Stop any existing polling
+        if (esp32PollingInterval) {
+          clearInterval(esp32PollingInterval);
         }
         
-        esp32WebSocket = new WebSocket("wss://f848d99f2e3a.ngrok-free.app");
-        
-        esp32WebSocket.onopen = () => {
-          statusDiv.textContent = '🟢 Connected successfully!';
-          statusDiv.style.color = '#4CAF50';
-          espStatus.textContent = '📡 ESP32: Connected';
-          espStatus.className = 'esp-status';
-        };
-        
-        esp32WebSocket.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            lastSensorData = data;
-            processFixedSensorData(data);
-          } catch (e) {
-            // Handle non-JSON data
-          }
-        };
-        
-        esp32WebSocket.onclose = () => {
-          statusDiv.textContent = '🔴 Disconnected';
-          statusDiv.style.color = '#F44336';
-          espStatus.textContent = '📡 ESP32: Disconnected';
-          espStatus.className = 'esp-status disconnected';
-        };
-        
-        esp32WebSocket.onerror = (error) => {
-          statusDiv.textContent = '⚠️ Connection Error';
-          statusDiv.style.color = '#F44336';
-          espStatus.textContent = '📡 ESP32: Error';
-          espStatus.className = 'esp-status disconnected';
-        };
+        // Start HTTP polling
+        esp32PollingInterval = setInterval(() => {
+          fetch(`http://${esp32IP}/sensor-data`)
+            .then(response => {
+              if (!response.ok) throw new Error('Network response was not ok');
+              return response.json();
+            })
+            .then(data => {
+              // First successful connection
+              if (espStatus.className.includes('disconnected')) {
+                statusDiv.textContent = '🟢 Connected successfully!';
+                statusDiv.style.color = '#4CAF50';
+                espStatus.textContent = '📡 ESP32: Connected';
+                espStatus.className = 'esp-status';
+              }
+              
+              lastSensorData = data;
+              processFixedSensorData(data);
+            })
+            .catch(error => {
+              if (!espStatus.className.includes('disconnected')) {
+                statusDiv.textContent = '🔴 Connection lost';
+                statusDiv.style.color = '#F44336';
+                espStatus.textContent = '📡 ESP32: Disconnected';
+                espStatus.className = 'esp-status disconnected';
+              }
+            });
+        }, 500); // Poll every 500ms
       }
 
       // SENSOR PROCESSING - Game only starts when walking detected
       function processFixedSensorData(data) {
-        const { flex, tilt, flexSolenoid, imuSolenoid } = data;
-        if (!flex || tilt === undefined) return;
+        const { flexAngles, tilt, flexActive, imuActive } = data;
+        if (!flexAngles || tilt === undefined) return;
         
-        const avgFlex = (flex[0] + flex[1] + flex[2]) / 3;
+        const avgFlex = (flexAngles[0] + flexAngles[1] + flexAngles[2]) / 3;
         const absTilt = Math.abs(tilt);
         
         // FIXED SENSOR STATES
-        const flexActive = (flexSolenoid === true) || (avgFlex >= sensorThresholds.flexThreshold);
-        const imuActive = (imuSolenoid === true) || (absTilt >= sensorThresholds.imuThreshold);
+        const flexActiveState = (flexActive === 1) || (avgFlex >= sensorThresholds.flexThreshold);
+        const imuActiveState = (imuActive === 1) || (absTilt >= sensorThresholds.imuThreshold);
         
-        sensorThresholds.flexRequired = flexActive;
-        sensorThresholds.imuRequired = imuActive;
+        sensorThresholds.flexRequired = flexActiveState;
+        sensorThresholds.imuRequired = imuActiveState;
         
         // Check if we're in waiting mode and detect walking to start game
-        if (gameState === 'waiting' && imuActive) {
+        if (gameState === 'waiting' && imuActiveState) {
           actuallyStartGame();
           return;
         }
@@ -874,7 +873,7 @@
         const now = Date.now();
         
         // MOVEMENT: Only when IMU is deliberately activated AND not in golf mode
-        if (imuActive && golfState === 'none') {
+        if (imuActiveState && golfState === 'none') {
           const tiltIntensity = Math.min(absTilt / 25, 1.0);
           const targetSpeed = 0.2 + (tiltIntensity * 0.4);
           updateSmoothMovement(targetSpeed);
@@ -889,7 +888,7 @@
         }
         
         // COLLECTION AND TOUCH: Must flex AND be in proximity
-        if (flexActive && golfState === 'none') {
+        if (flexActiveState && golfState === 'none') {
           let actionTaken = false;
           
           if (handleCoinCollection()) {
@@ -914,7 +913,7 @@
         }
         
         // GOLF SYSTEM
-        handleGolfSystem(avgFlex, absTilt, flexActive, imuActive);
+        handleGolfSystem(avgFlex, absTilt, flexActiveState, imuActiveState);
       }
 
       // SMOOTH MOVEMENT SYSTEM
@@ -1439,6 +1438,12 @@
           clearInterval(sessionTimer);
         }
         
+        // Stop ESP32 polling
+        if (esp32PollingInterval) {
+          clearInterval(esp32PollingInterval);
+          esp32PollingInterval = null;
+        }
+        
         document.getElementById('game-overlay').classList.remove('hidden');
         document.getElementById('golf-power-meter').style.display = 'none';
         
@@ -1892,14 +1897,12 @@
         }
       }, 8000);
 
-      // Keep WebSocket connection alive
+      // Keep HTTP polling connection alive with ping
       setInterval(() => {
-        if (esp32WebSocket && esp32WebSocket.readyState === WebSocket.OPEN) {
-          try {
-            esp32WebSocket.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
-          } catch (error) {
-            console.log('WebSocket ping failed:', error);
-          }
+        if (esp32PollingInterval && esp32IP) {
+          fetch(`http://${esp32IP}/ping`).catch(() => {
+            // Silent fail - normal polling will handle reconnection
+          });
         }
       }, 30000);
 
