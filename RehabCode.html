@@ -875,11 +875,21 @@
           clearInterval(dashboardPollingInterval);
         }
         
-        // Start polling dashboard for sensor data
+        // Start polling dashboard for sensor data with enhanced error handling
         dashboardPollingInterval = setInterval(() => {
-          fetch(`${dashboardBaseURL}/sensor-data`)
+          fetch(`${dashboardBaseURL}/sensor-data`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            mode: 'cors', // Enable CORS
+            credentials: 'omit' // Don't send credentials
+          })
             .then(response => {
-              if (!response.ok) throw new Error('Network response was not ok');
+              if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+              }
               return response.json();
             })
             .then(data => {
@@ -890,6 +900,7 @@
                 espStatus.textContent = 'Dashboard: Connected';
                 espStatus.className = 'esp-status';
                 document.getElementById('sensor-display').style.display = 'block';
+                console.log('Dashboard connected successfully');
               }
               
               lastSensorData = data;
@@ -897,15 +908,16 @@
               processDashboardSensorData(data);
             })
             .catch(error => {
+              console.error('Dashboard connection error:', error);
               if (!espStatus.className.includes('disconnected')) {
-                statusDiv.textContent = 'Connection lost - check dashboard';
+                statusDiv.textContent = `Connection failed: ${error.message}`;
                 statusDiv.style.color = '#F44336';
-                espStatus.textContent = 'Dashboard: Disconnected';
+                espStatus.textContent = 'Dashboard: Connection Error';
                 espStatus.className = 'esp-status disconnected';
                 document.getElementById('sensor-display').style.display = 'none';
               }
             });
-        }, 100); // Poll every 100ms for smooth VR
+        }, 200); // Slightly slower polling to reduce load
       }
 
       // UPDATE SENSOR DISPLAY
