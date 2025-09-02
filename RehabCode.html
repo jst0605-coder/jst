@@ -352,6 +352,11 @@
           <h3>Connect to VR Rehab Dashboard</h3>
           <input type="text" id="esp-ip" placeholder="Dashboard URL (e.g., https://ba7e2c9510e5.ngrok-free.app)" value="https://ba7e2c9510e5.ngrok-free.app">
           <br>
+          <label style="margin: 10px 0; display: block;">
+            <input type="checkbox" id="use-cors-proxy" style="width: auto; margin-right: 10px;">
+            Use CORS Proxy (if dashboard has CORS issues)
+          </label>
+          <br>
           <button id="connect-esp" class="btn btn-secondary" onclick="connectToDashboard()">Connect to Dashboard</button>
           <button id="test-endpoint" class="btn btn-secondary" onclick="testEndpoint()">Test Endpoint</button>
           <button id="toggle-debug" class="btn btn-secondary" onclick="toggleDebug()">Toggle Debug</button>
@@ -361,9 +366,9 @@
             <strong>Dashboard Integration:</strong><br>
             1. Your VR Rehab Dashboard should be running<br>
             2. Enter the ngrok HTTPS URL above<br>
-            3. Click "Test Endpoint" first to check connectivity<br>
-            4. Then click "Connect" - VR game will receive real sensor data<br>
-            5. Physical sensor movements will trigger VR actions<br>
+            3. <strong style="color: #F44336;">CORS Error Fix:</strong> Add CORS headers to your dashboard server<br>
+            4. Click "Test Endpoint" first to check connectivity<br>
+            5. If CORS issues persist, enable "Use CORS Proxy" above<br>
             <strong>Default URL pre-filled for quick connection!</strong>
           </div>
         </div>
