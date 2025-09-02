@@ -887,12 +887,29 @@
             credentials: 'omit' // Don't send credentials
           })
             .then(response => {
+              console.log('Response status:', response.status);
+              console.log('Response headers:', response.headers.get('content-type'));
+              
               if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
               }
+              
+              // Check if response is actually JSON
+              const contentType = response.headers.get('content-type');
+              if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Response is not JSON - received: ' + contentType);
+              }
+              
               return response.json();
             })
             .then(data => {
+              console.log('Received sensor data:', data);
+              
+              // Validate data structure
+              if (!data.flexAngles || typeof data.tilt === 'undefined') {
+                throw new Error('Invalid sensor data structure');
+              }
+              
               // First successful connection
               if (espStatus.className.includes('disconnected')) {
                 statusDiv.textContent = 'Connected to Dashboard!';
@@ -917,7 +934,7 @@
                 document.getElementById('sensor-display').style.display = 'none';
               }
             });
-        }, 200); // Slightly slower polling to reduce load
+        }, 500); // Poll every 500ms
       }
 
       // UPDATE SENSOR DISPLAY
