@@ -193,7 +193,7 @@
         width: 300px;
       }
       
-      .ngrok-instructions {
+      .dashboard-instructions {
         background: rgba(255,255,255,0.1);
         padding: 15px;
         border-radius: 10px;
@@ -239,6 +239,30 @@
         border-radius: 5px;
         transition: width 0.1s;
       }
+
+      /* Real-time Sensor Display */
+      .sensor-display {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        font-size: 12px;
+        z-index: 100;
+        min-width: 150px;
+        border: 2px solid #2196F3;
+      }
+
+      .sensor-value {
+        margin: 3px 0;
+      }
+
+      .sensor-active {
+        color: #4CAF50;
+        font-weight: bold;
+      }
     </style>
   </head>
   <body>
@@ -247,7 +271,18 @@
     
     <!-- ESP32 Status -->
     <div class="esp-status disconnected" id="esp-status">
-      ESP32: Disconnected
+      Dashboard: Disconnected
+    </div>
+
+    <!-- Real-time Sensor Display -->
+    <div class="sensor-display" id="sensor-display" style="display: none;">
+      <div><strong>Sensor Data</strong></div>
+      <div class="sensor-value">Flex1: <span id="flex1-val">0°</span></div>
+      <div class="sensor-value">Flex2: <span id="flex2-val">0°</span></div>
+      <div class="sensor-value">Flex3: <span id="flex3-val">0°</span></div>
+      <div class="sensor-value">Tilt: <span id="tilt-val">0°</span></div>
+      <div class="sensor-value">Flex Active: <span id="flex-active">No</span></div>
+      <div class="sensor-value">IMU Active: <span id="imu-active">No</span></div>
     </div>
     
     <!-- Performance HUD -->
@@ -287,18 +322,19 @@
         </p>
         
         <div id="esp-settings">
-          <h3>ESP32 Connection via ngrok</h3>
-          <input type="text" id="esp-ip" placeholder="ngrok HTTPS URL (e.g., https://abc123.ngrok.io)" value="">
+          <h3>Connect to VR Rehab Dashboard</h3>
+          <input type="text" id="esp-ip" placeholder="Dashboard URL (e.g., https://ba7e2c9510e5.ngrok-free.app)" value="https://ba7e2c9510e5.ngrok-free.app">
           <br>
-          <button id="connect-esp" class="btn btn-secondary" onclick="connectESP32()">Connect via ngrok</button>
+          <button id="connect-esp" class="btn btn-secondary" onclick="connectToDashboard()">Connect to Dashboard</button>
           <div id="connection-status" style="margin-top: 10px; color: #FFD700;"></div>
           
-          <div class="ngrok-instructions">
-            <strong>Setup Instructions:</strong><br>
-            1. Run: <code>ngrok http YOUR_ESP32_IP:80</code><br>
-            2. Copy the https://xxx.ngrok.io URL<br>
-            3. Paste it above and connect<br>
-            4. This enables HTTPS for VR mode
+          <div class="dashboard-instructions">
+            <strong>Dashboard Integration:</strong><br>
+            1. Your VR Rehab Dashboard should be running<br>
+            2. Enter the ngrok HTTPS URL above<br>
+            3. Click Connect - VR game will receive real sensor data<br>
+            4. Physical sensor movements will trigger VR actions<br>
+            <strong>Default URL pre-filled for quick connection!</strong>
           </div>
         </div>
         
@@ -400,7 +436,7 @@
                 font="kelsonsans"></a-text>
         
         <a-text position="0 -1 0.01" 
-                value="Ball returns after shot! Score when in hole!" 
+                value="Real sensors control VR actions!" 
                 color="#FFFFFF" 
                 scale="0.4 0.4 0.4" 
                 align="center"
@@ -759,8 +795,8 @@
 
     <script>
       // Global variables
-      let esp32PollingInterval = null;
-      let esp32BaseURL = null;
+      let dashboardPollingInterval = null;
+      let dashboardBaseURL = null;
       let therapeuticGolf = null;
       let sessionTimer = null;
       let gameState = 'menu';
@@ -791,10 +827,10 @@
       let isInVRMode = false;
       let golfTimeout = null;
       
-      // SENSOR THRESHOLD SYSTEM
+      // SENSOR THRESHOLD SYSTEM - ADJUSTED FOR DASHBOARD DATA
       let sensorThresholds = {
-        flexThreshold: 35,    
-        imuThreshold: 10,     
+        flexThreshold: 25,      // Lowered from 35 for better sensitivity
+        imuThreshold: 8,        // Lowered from 10 for better sensitivity  
         proximityDistance: 3.5,
         flexRequired: false,
         imuRequired: false
@@ -811,37 +847,37 @@
         animalsTouched: 0
       };
 
-      // ESP32 Connection - MODIFIED FOR NGROK HTTPS
-      function connectESP32() {
+      // DASHBOARD CONNECTION - MODIFIED TO CONNECT TO YOUR DASHBOARD
+      function connectToDashboard() {
         const ipInput = document.getElementById('esp-ip');
         const statusDiv = document.getElementById('connection-status');
         const espStatus = document.getElementById('esp-status');
         
-        // CHANGE THIS: Instead of IP, use ngrok URL
-        const ngrokUrl = ipInput ? ipInput.value.trim() : '';
+        // Use the ngrok URL provided
+        const dashboardUrl = ipInput ? ipInput.value.trim() : '';
         
-        if (!ngrokUrl) {
-          statusDiv.textContent = 'Please enter ngrok HTTPS URL';
+        if (!dashboardUrl) {
+          statusDiv.textContent = 'Please enter dashboard URL';
           return;
         }
         
-        if (!ngrokUrl.startsWith('https://')) {
-          statusDiv.textContent = 'Please enter ngrok HTTPS URL (e.g., https://abc123.ngrok.io)';
+        if (!dashboardUrl.startsWith('https://') && !dashboardUrl.startsWith('http://')) {
+          statusDiv.textContent = 'Please enter valid URL (https:// or http://)';
           return;
         }
         
-        esp32BaseURL = ngrokUrl; // This will now be the full ngrok URL
-        statusDiv.textContent = `Connecting to ${ngrokUrl}...`;
+        dashboardBaseURL = dashboardUrl;
+        statusDiv.textContent = `Connecting to ${dashboardUrl}...`;
         statusDiv.style.color = '#FFD700';
         
         // Stop any existing polling
-        if (esp32PollingInterval) {
-          clearInterval(esp32PollingInterval);
+        if (dashboardPollingInterval) {
+          clearInterval(dashboardPollingInterval);
         }
         
-        // Start HTTPS polling via ngrok
-        esp32PollingInterval = setInterval(() => {
-          fetch(`${esp32BaseURL}/sensor-data`) // Now uses HTTPS via ngrok
+        // Start polling dashboard for sensor data
+        dashboardPollingInterval = setInterval(() => {
+          fetch(`${dashboardBaseURL}/sensor-data`)
             .then(response => {
               if (!response.ok) throw new Error('Network response was not ok');
               return response.json();
@@ -849,37 +885,70 @@
             .then(data => {
               // First successful connection
               if (espStatus.className.includes('disconnected')) {
-                statusDiv.textContent = 'Connected via ngrok!';
+                statusDiv.textContent = 'Connected to Dashboard!';
                 statusDiv.style.color = '#4CAF50';
-                espStatus.textContent = 'ESP32: Connected (ngrok)';
+                espStatus.textContent = 'Dashboard: Connected';
                 espStatus.className = 'esp-status';
+                document.getElementById('sensor-display').style.display = 'block';
               }
               
               lastSensorData = data;
-              processFixedSensorData(data);
+              updateSensorDisplay(data);
+              processDashboardSensorData(data);
             })
             .catch(error => {
               if (!espStatus.className.includes('disconnected')) {
-                statusDiv.textContent = 'Connection lost - check ngrok';
+                statusDiv.textContent = 'Connection lost - check dashboard';
                 statusDiv.style.color = '#F44336';
-                espStatus.textContent = 'ESP32: Disconnected';
+                espStatus.textContent = 'Dashboard: Disconnected';
                 espStatus.className = 'esp-status disconnected';
+                document.getElementById('sensor-display').style.display = 'none';
               }
             });
         }, 100); // Poll every 100ms for smooth VR
       }
 
-      // SENSOR PROCESSING - Game only starts when walking detected
-      function processFixedSensorData(data) {
-        const { flexAngles, tilt, flexActive, imuActive } = data;
+      // UPDATE SENSOR DISPLAY
+      function updateSensorDisplay(data) {
+        if (!data.flexAngles) return;
+        
+        document.getElementById('flex1-val').textContent = data.flexAngles[0].toFixed(1) + '°';
+        document.getElementById('flex2-val').textContent = data.flexAngles[1].toFixed(1) + '°';
+        document.getElementById('flex3-val').textContent = data.flexAngles[2].toFixed(1) + '°';
+        document.getElementById('tilt-val').textContent = Math.abs(data.tilt || 0).toFixed(1) + '°';
+        
+        // Update active states with colors
+        const flexActiveEl = document.getElementById('flex-active');
+        const imuActiveEl = document.getElementById('imu-active');
+        
+        if (data.flexActive || data.solenoidFlex) {
+          flexActiveEl.textContent = 'YES';
+          flexActiveEl.className = 'sensor-value sensor-active';
+        } else {
+          flexActiveEl.textContent = 'No';
+          flexActiveEl.className = 'sensor-value';
+        }
+        
+        if (data.imuActive || data.solenoidIMU) {
+          imuActiveEl.textContent = 'YES';  
+          imuActiveEl.className = 'sensor-value sensor-active';
+        } else {
+          imuActiveEl.textContent = 'No';
+          imuActiveEl.className = 'sensor-value';
+        }
+      }
+
+      // SENSOR PROCESSING - MODIFIED FOR DASHBOARD DATA
+      function processDashboardSensorData(data) {
+        const { flexAngles, tilt, flexActive, imuActive, solenoidFlex, solenoidIMU } = data;
         if (!flexAngles || tilt === undefined) return;
         
         const avgFlex = (flexAngles[0] + flexAngles[1] + flexAngles[2]) / 3;
         const absTilt = Math.abs(tilt);
         
-        // FIXED SENSOR STATES
-        const flexActiveState = (flexActive === 1) || (avgFlex >= sensorThresholds.flexThreshold);
-        const imuActiveState = (imuActive === 1) || (absTilt >= sensorThresholds.imuThreshold);
+        // ENHANCED SENSOR STATES - Use dashboard's processed states OR calculate from raw data
+        const flexActiveState = (flexActive === 1) || (solenoidFlex === 1) || (avgFlex >= sensorThresholds.flexThreshold);
+        const imuActiveState = (imuActive === 1) || (solenoidIMU === 1) || (absTilt >= sensorThresholds.imuThreshold);
         
         sensorThresholds.flexRequired = flexActiveState;
         sensorThresholds.imuRequired = imuActiveState;
@@ -897,8 +966,8 @@
         
         // MOVEMENT: Only when IMU is deliberately activated AND not in golf mode
         if (imuActiveState && golfState === 'none') {
-          const tiltIntensity = Math.min(absTilt / 25, 1.0);
-          const targetSpeed = 0.2 + (tiltIntensity * 0.4);
+          const tiltIntensity = Math.min(absTilt / 20, 1.0); // Adjusted for better responsiveness
+          const targetSpeed = 0.15 + (tiltIntensity * 0.5); // Slightly faster movement
           updateSmoothMovement(targetSpeed);
           performanceMetrics.totalActions++;
         } else {
@@ -935,7 +1004,7 @@
           lastActionTime = now;
         }
         
-        // GOLF SYSTEM
+        // GOLF SYSTEM - Enhanced with dashboard data
         handleGolfSystem(avgFlex, absTilt, flexActiveState, imuActiveState);
       }
 
@@ -1349,8 +1418,8 @@
               indicator.className = 'mode-indicator walk-mode';
               indicator.innerHTML = `
                 <div><strong>All Interactions Active! (5 Min)</strong></div>
-                <div style="font-size: 12px; margin-top: 5px;">Elbow = move, flex finger + be close for interaction</div>
-                <div style="font-size: 12px;">Golf scores when ball enters hole</div>
+                <div style="font-size: 12px; margin-top: 5px;">Dashboard sensors controlling VR actions</div>
+                <div style="font-size: 12px;">Real-time flex + IMU data</div>
               `;
             }
             break;
@@ -1364,6 +1433,11 @@
         
         if (!patientName || !patientId) {
           alert('Please enter patient name and ID before starting the session.');
+          return;
+        }
+        
+        if (!dashboardBaseURL) {
+          alert('Please connect to the dashboard first before starting the session.');
           return;
         }
         
@@ -1461,10 +1535,10 @@
           clearInterval(sessionTimer);
         }
         
-        // Stop ESP32 polling
-        if (esp32PollingInterval) {
-          clearInterval(esp32PollingInterval);
-          esp32PollingInterval = null;
+        // Stop dashboard polling
+        if (dashboardPollingInterval) {
+          clearInterval(dashboardPollingInterval);
+          dashboardPollingInterval = null;
         }
         
         document.getElementById('game-overlay').classList.remove('hidden');
@@ -1476,6 +1550,7 @@
         document.getElementById('session-timer').style.display = 'none';
         document.getElementById('performance-hud').style.display = 'none';
         document.getElementById('mode-indicator').style.display = 'none';
+        document.getElementById('sensor-display').style.display = 'none';
       }
 
       function initializeTherapeuticGolf(patientName, patientId) {
@@ -1538,8 +1613,8 @@
         document.getElementById('mode-indicator').style.display = 'none';
         document.getElementById('golf-power-meter').style.display = 'none';
         
-        // Simple end message instead of full report
-        alert(`Session Complete!\nTime: 5:00 minutes\nShots: ${performanceMetrics.golfShotsTotal}\nHoles: ${performanceMetrics.golfHolesMade}\nCoins: ${performanceMetrics.coinsCollected}\nAnimals: ${performanceMetrics.animalsTouched}`);
+        // Enhanced end message with dashboard integration info
+        alert(`Session Complete!\nTime: 5:00 minutes\nShots: ${performanceMetrics.golfShotsTotal}\nHoles: ${performanceMetrics.golfHolesMade}\nCoins: ${performanceMetrics.coinsCollected}\nAnimals: ${performanceMetrics.animalsTouched}\n\nDashboard Integration: ${dashboardBaseURL ? 'Connected' : 'Not Connected'}`);
         
         // Return to menu
         newSession();
@@ -1885,6 +1960,14 @@
       document.addEventListener('DOMContentLoaded', function() {
         updateModeIndicator();
         detectVRMode();
+        
+        // Auto-connect to dashboard if URL is pre-filled
+        const dashboardInput = document.getElementById('esp-ip');
+        if (dashboardInput && dashboardInput.value.trim()) {
+          setTimeout(() => {
+            connectToDashboard();
+          }, 1000);
+        }
         
         // Mobile VR support
         if (/Android|iPhone|iPad/.test(navigator.userAgent)) {
