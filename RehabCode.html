@@ -190,7 +190,16 @@
         margin: 5px;
         border-radius: 5px;
         border: none;
-        width: 200px;
+        width: 300px;
+      }
+      
+      .ngrok-instructions {
+        background: rgba(255,255,255,0.1);
+        padding: 15px;
+        border-radius: 10px;
+        margin: 10px 0;
+        font-size: 12px;
+        color: #E0E0E0;
       }
       
       .progress-bar {
@@ -238,24 +247,24 @@
     
     <!-- ESP32 Status -->
     <div class="esp-status disconnected" id="esp-status">
-      📡 ESP32: Disconnected
+      ESP32: Disconnected
     </div>
     
     <!-- Performance HUD -->
     <div class="performance-hud" id="performance-hud" style="display: none;">
-      <div><strong>🎯 Session Progress</strong></div>
+      <div><strong>Session Progress</strong></div>
       <div class="progress-bar">
         <div class="progress-fill" id="session-progress" style="width: 0%;"></div>
       </div>
-      <div>⛳ Shots: <span id="shot-count">0</span></div>
-      <div>🎯 Holes: <span id="hole-count">0</span></div>
-      <div>🏆 Score: <span id="current-score">0</span></div>
-      <div>🌸 Explored: <span id="exploration-distance">0m</span></div>
+      <div>Shots: <span id="shot-count">0</span></div>
+      <div>Holes: <span id="hole-count">0</span></div>
+      <div>Score: <span id="current-score">0</span></div>
+      <div>Explored: <span id="exploration-distance">0m</span></div>
     </div>
 
     <!-- Enhanced Mode Indicator -->
     <div class="mode-indicator waiting-walk" id="mode-indicator" style="display: none;">
-      <div><strong>🚶 WAITING FOR WALKING</strong></div>
+      <div><strong>WAITING FOR WALKING</strong></div>
       <div style="font-size: 12px; margin-top: 5px;">Start walking to begin the game!</div>
     </div>
 
@@ -268,21 +277,29 @@
     <!-- Game Start/End Overlay -->
     <div id="game-overlay">
       <div class="overlay-content">
-        <h1 id="overlay-title">🏌️ VR Therapeutic Golf World (5 Minutes)</h1>
+        <h1 id="overlay-title">VR Therapeutic Golf World (5 Minutes)</h1>
         <p id="overlay-description">
-          ⏱️ 5-minute assessment duration<br>
-          🎯 Golf scoring system<br>
-          💰 Interactive coin collection<br>
-          🐾 Animal interaction mechanics<br>
-          🚶 Game starts when you walk!
+          5-minute assessment duration<br>
+          Golf scoring system<br>
+          Interactive coin collection<br>
+          Animal interaction mechanics<br>
+          Game starts when you walk!
         </p>
         
         <div id="esp-settings">
-          <h3>ESP32 Connection</h3>
-          <input type="text" id="esp-ip" placeholder="ESP32 IP Address (e.g., 172.20.10.6)" value="172.20.10.6">
+          <h3>ESP32 Connection via ngrok</h3>
+          <input type="text" id="esp-ip" placeholder="ngrok HTTPS URL (e.g., https://abc123.ngrok.io)" value="">
           <br>
-          <button id="connect-esp" class="btn btn-secondary" onclick="connectESP32()">📡 Connect to ESP32</button>
+          <button id="connect-esp" class="btn btn-secondary" onclick="connectESP32()">Connect via ngrok</button>
           <div id="connection-status" style="margin-top: 10px; color: #FFD700;"></div>
+          
+          <div class="ngrok-instructions">
+            <strong>Setup Instructions:</strong><br>
+            1. Run: <code>ngrok http YOUR_ESP32_IP:80</code><br>
+            2. Copy the https://xxx.ngrok.io URL<br>
+            3. Paste it above and connect<br>
+            4. This enables HTTPS for VR mode
+          </div>
         </div>
         
         <div id="patient-info" style="margin: 20px 0;">
@@ -291,14 +308,14 @@
           <input type="text" id="patient-id" placeholder="Patient ID" 
                  style="padding: 10px; margin: 5px; border-radius: 5px; border: none; width: 200px;">
         </div>
-        <button id="start-session" class="btn" onclick="startSession()">🎯 Start Session (Walk to Begin)</button>
-        <button id="view-demo" class="btn btn-secondary" onclick="startDemo()">👁️ View Demo Mode</button>
+        <button id="start-session" class="btn" onclick="startSession()">Start Session (Walk to Begin)</button>
+        <button id="view-demo" class="btn btn-secondary" onclick="startDemo()">View Demo Mode</button>
       </div>
     </div>
 
     <!-- Session Timer -->
     <div class="session-timer" id="session-timer" style="display: none;">
-      ⏱️ <span id="time-remaining">5:00</span>
+      <span id="time-remaining">5:00</span>
     </div>
 
     <!-- VR Scene -->
@@ -348,42 +365,42 @@
                  geometry="primitive: plane"></a-plane>
         
         <a-text position="0 1.5 0.01" 
-                value="🎮 CONTROLS (5 MIN)" 
+                value="CONTROLS (5 MIN)" 
                 color="#FFD700" 
                 scale="0.8 0.8 0.8" 
                 align="center"
                 font="kelsonsans"></a-text>
         
         <a-text position="0 1 0.01" 
-                value="🚶 WALK: Elbow bend = smooth movement (starts game)" 
+                value="WALK: Elbow bend = smooth movement (starts game)" 
                 color="#2196F3" 
                 scale="0.5 0.5 0.5" 
                 align="center"
                 font="kelsonsans"></a-text>
         
         <a-text position="0 0.5 0.01" 
-                value="💰 COLLECT: Must flex finger + be close" 
+                value="COLLECT: Must flex finger + be close" 
                 color="#FFD700" 
                 scale="0.5 0.5 0.5" 
                 align="center"
                 font="kelsonsans"></a-text>
         
         <a-text position="0 0 0.01" 
-                value="🏌️ GOLF: Look at ball + hold finger flex" 
+                value="GOLF: Look at ball + hold finger flex" 
                 color="#4CAF50" 
                 scale="0.5 0.5 0.5" 
                 align="center"
                 font="kelsonsans"></a-text>
         
         <a-text position="0 -0.5 0.01" 
-                value="🐾 TOUCH: Must flex finger + be close" 
+                value="TOUCH: Must flex finger + be close" 
                 color="#E91E63" 
                 scale="0.5 0.5 0.5" 
                 align="center"
                 font="kelsonsans"></a-text>
         
         <a-text position="0 -1 0.01" 
-                value="🔄 Ball returns after shot! Score when in hole!" 
+                value="Ball returns after shot! Score when in hole!" 
                 color="#FFFFFF" 
                 scale="0.4 0.4 0.4" 
                 align="center"
@@ -698,7 +715,7 @@
       
       <!-- Course Labels -->
       <a-text position="-20 3 -10" 
-              value="🏌️ EASY GOLF COURSE ⬅️&#10;Perfect for beginners!" 
+              value="EASY GOLF COURSE ⬅️&#10;Perfect for beginners!" 
               color="#FFFFFF" 
               scale="0.8 0.8 0.8" 
               align="center"
@@ -706,7 +723,7 @@
               material="color: #4CAF50; opacity: 0.15; transparent: true"></a-text>
       
       <a-text position="20 3 -10" 
-              value="⚡ EXTREME CHALLENGE ➡️&#10;Master-level coordination!" 
+              value="EXTREME CHALLENGE ➡️&#10;Master-level coordination!" 
               color="#FFFFFF" 
               scale="0.8 0.8 0.8" 
               align="center"
@@ -743,7 +760,7 @@
     <script>
       // Global variables
       let esp32PollingInterval = null;
-      let esp32IP = null;
+      let esp32BaseURL = null;
       let therapeuticGolf = null;
       let sessionTimer = null;
       let gameState = 'menu';
@@ -794,21 +811,27 @@
         animalsTouched: 0
       };
 
-      // ESP32 Connection - CHANGED TO HTTP POLLING
+      // ESP32 Connection - MODIFIED FOR NGROK HTTPS
       function connectESP32() {
         const ipInput = document.getElementById('esp-ip');
         const statusDiv = document.getElementById('connection-status');
         const espStatus = document.getElementById('esp-status');
         
-        const ip = ipInput ? ipInput.value.trim() : '172.20.10.6';
+        // CHANGE THIS: Instead of IP, use ngrok URL
+        const ngrokUrl = ipInput ? ipInput.value.trim() : '';
         
-        if (!ip) {
-          statusDiv.textContent = '❌ Please enter IP address';
+        if (!ngrokUrl) {
+          statusDiv.textContent = 'Please enter ngrok HTTPS URL';
           return;
         }
         
-        esp32IP = ip;
-        statusDiv.textContent = `Connecting to ${ip}...`;
+        if (!ngrokUrl.startsWith('https://')) {
+          statusDiv.textContent = 'Please enter ngrok HTTPS URL (e.g., https://abc123.ngrok.io)';
+          return;
+        }
+        
+        esp32BaseURL = ngrokUrl; // This will now be the full ngrok URL
+        statusDiv.textContent = `Connecting to ${ngrokUrl}...`;
         statusDiv.style.color = '#FFD700';
         
         // Stop any existing polling
@@ -816,9 +839,9 @@
           clearInterval(esp32PollingInterval);
         }
         
-        // Start HTTP polling
+        // Start HTTPS polling via ngrok
         esp32PollingInterval = setInterval(() => {
-          fetch(`http://${esp32IP}/sensor-data`)
+          fetch(`${esp32BaseURL}/sensor-data`) // Now uses HTTPS via ngrok
             .then(response => {
               if (!response.ok) throw new Error('Network response was not ok');
               return response.json();
@@ -826,9 +849,9 @@
             .then(data => {
               // First successful connection
               if (espStatus.className.includes('disconnected')) {
-                statusDiv.textContent = '🟢 Connected successfully!';
+                statusDiv.textContent = 'Connected via ngrok!';
                 statusDiv.style.color = '#4CAF50';
-                espStatus.textContent = '📡 ESP32: Connected';
+                espStatus.textContent = 'ESP32: Connected (ngrok)';
                 espStatus.className = 'esp-status';
               }
               
@@ -837,13 +860,13 @@
             })
             .catch(error => {
               if (!espStatus.className.includes('disconnected')) {
-                statusDiv.textContent = '🔴 Connection lost';
+                statusDiv.textContent = 'Connection lost - check ngrok';
                 statusDiv.style.color = '#F44336';
-                espStatus.textContent = '📡 ESP32: Disconnected';
+                espStatus.textContent = 'ESP32: Disconnected';
                 espStatus.className = 'esp-status disconnected';
               }
             });
-        }, 500); // Poll every 500ms
+        }, 100); // Poll every 100ms for smooth VR
       }
 
       // SENSOR PROCESSING - Game only starts when walking detected
@@ -1300,7 +1323,7 @@
           case 'aiming':
             indicator.className = 'mode-indicator golf-ready';
             indicator.innerHTML = `
-              <div><strong>🎯 GOLF AIMING</strong></div>
+              <div><strong>GOLF AIMING</strong></div>
               <div style="font-size: 12px; margin-top: 5px;">Keep finger flex + add elbow for power</div>
               <div style="font-size: 12px;">Release finger to cancel</div>
             `;
@@ -1309,7 +1332,7 @@
           case 'power':
             indicator.className = 'mode-indicator golf-ready';
             indicator.innerHTML = `
-              <div><strong>⚡ GOLF POWER</strong></div>
+              <div><strong>GOLF POWER</strong></div>
               <div style="font-size: 12px; margin-top: 5px;">Hold both controls for power</div>
               <div style="font-size: 12px;">Release either to swing!</div>
             `;
@@ -1319,13 +1342,13 @@
             if (gameState === 'waiting') {
               indicator.className = 'mode-indicator waiting-walk';
               indicator.innerHTML = `
-                <div><strong>🚶 WAITING FOR WALKING</strong></div>
+                <div><strong>WAITING FOR WALKING</strong></div>
                 <div style="font-size: 12px; margin-top: 5px;">Start walking to begin the game!</div>
               `;
             } else {
               indicator.className = 'mode-indicator walk-mode';
               indicator.innerHTML = `
-                <div><strong>🚶 All Interactions Active! (5 Min)</strong></div>
+                <div><strong>All Interactions Active! (5 Min)</strong></div>
                 <div style="font-size: 12px; margin-top: 5px;">Elbow = move, flex finger + be close for interaction</div>
                 <div style="font-size: 12px;">Golf scores when ball enters hole</div>
               `;
@@ -1896,15 +1919,6 @@
           }
         }
       }, 8000);
-
-      // Keep HTTP polling connection alive with ping
-      setInterval(() => {
-        if (esp32PollingInterval && esp32IP) {
-          fetch(`http://${esp32IP}/ping`).catch(() => {
-            // Silent fail - normal polling will handle reconnection
-          });
-        }
-      }, 30000);
 
       // Ball reset safeguard
       setInterval(() => {
