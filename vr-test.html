@@ -1,53 +1,46 @@
-#include <BLEDevice.h>
-#include <BLEUtils.h>
-#include <BLEServer.h>
+<html>
+  <head>
+    <title>VR + BLE Test</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  </head>
+  <body>
+    <a-scene>
+      <a-box id="box" position="0 1.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
+      <a-sky color="#ECECEC"></a-sky>
+    </a-scene>
 
-#define SERVICE_UUID        "12345678-1234-5678-1234-56789abcdef0"
-#define CHARACTERISTIC_UUID "12345678-1234-5678-1234-56789abcdef1"
+    <button id="connectBtn" style="position:absolute;top:10px;left:10px;z-index:999;">Connect ESP32</button>
 
-BLECharacteristic *pCharacteristic;
+    <script>
+      const serviceUUID = "12345678-1234-5678-1234-56789abcdef0";
+      const charUUID    = "12345678-1234-5678-1234-56789abcdef1";
+      let characteristic;
 
-class MyCallbacks : public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic *pChar) {
-      std::string value = pChar->getValue();
-      if (value.length() > 0) {
-        Serial.print("Received from phone: ");
-        Serial.println(value.c_str());
-      }
-    }
-};
+      document.getElementById("connectBtn").onclick = async () => {
+        try {
+          const device = await navigator.bluetooth.requestDevice({
+            filters: [{ name: 'ESP32-VR-Test' }],
+            optionalServices: [serviceUUID]
+          });
+          const server = await device.gatt.connect();
+          const service = await server.getPrimaryService(serviceUUID);
+          characteristic = await service.getCharacteristic(charUUID);
 
-void setup() {
-  Serial.begin(115200);
+          // Listen for ESP32 notifications
+          characteristic.startNotifications();
+          characteristic.addEventListener("characteristicvaluechanged", e => {
+            let value = new TextDecoder().decode(e.target.value);
+            console.log("From ESP32:", value);
+            // Change box color every tick
+            document.querySelector("#box").setAttribute("color", value.includes("tick") ? "red" : "green");
+          });
 
-  BLEDevice::init("ESP32-VR-Test");
-  BLEServer *pServer = BLEDevice::createServer();
-  BLEService *pService = pServer->createService(SERVICE_UUID);
-
-  pCharacteristic = pService->createCharacteristic(
-                      CHARACTERISTIC_UUID,
-                      BLECharacteristic::PROPERTY_READ   |
-                      BLECharacteristic::PROPERTY_WRITE  |
-                      BLECharacteristic::PROPERTY_NOTIFY
-                    );
-
-  pCharacteristic->setValue("Hello from ESP32");
-  pCharacteristic->setCallbacks(new MyCallbacks());
-
-  pService->start();
-  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-  pAdvertising->addServiceUUID(SERVICE_UUID);
-  pAdvertising->start();
-
-  Serial.println("BLE server is running, waiting for phone...");
-}
-
-void loop() {
-  // For testing: update value every 3s
-  static unsigned long last = 0;
-  if (millis() - last > 3000) {
-    last = millis();
-    pCharacteristic->setValue("ESP32 tick " + String(millis()/1000));
-    pCharacteristic->notify();
-  }
-}
+          alert("Connected to ESP32!");
+        } catch (error) {
+          console.error(error);
+          alert("Failed: " + error);
+        }
+      };
+    </script>
+  </body>
+</html>
