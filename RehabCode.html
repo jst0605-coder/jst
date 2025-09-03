@@ -51,18 +51,11 @@
         border-radius: 10px;
         z-index: 100;
         border: 2px solid #4CAF50;
-        max-width: 300px;
-        word-wrap: break-word;
       }
       
       .esp-status.disconnected {
         border-color: #F44336;
         color: #F44336;
-      }
-      
-      .esp-status.error {
-        border-color: #FF9800;
-        color: #FF9800;
       }
       
       .gaze-cursor {
@@ -197,16 +190,7 @@
         margin: 5px;
         border-radius: 5px;
         border: none;
-        width: 300px;
-      }
-      
-      .dashboard-instructions {
-        background: rgba(255,255,255,0.1);
-        padding: 15px;
-        border-radius: 10px;
-        margin: 10px 0;
-        font-size: 12px;
-        color: #E0E0E0;
+        width: 200px;
       }
       
       .progress-bar {
@@ -246,47 +230,6 @@
         border-radius: 5px;
         transition: width 0.1s;
       }
-
-      /* Real-time Sensor Display */
-      .sensor-display {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: rgba(0,0,0,0.8);
-        color: white;
-        padding: 15px;
-        border-radius: 10px;
-        font-size: 12px;
-        z-index: 100;
-        min-width: 150px;
-        border: 2px solid #2196F3;
-      }
-
-      .sensor-value {
-        margin: 3px 0;
-      }
-
-      .sensor-active {
-        color: #4CAF50;
-        font-weight: bold;
-      }
-
-      /* Debug info */
-      .debug-info {
-        position: fixed;
-        top: 300px;
-        left: 20px;
-        background: rgba(0,0,0,0.9);
-        color: #00FF00;
-        padding: 10px;
-        border-radius: 5px;
-        font-family: monospace;
-        font-size: 10px;
-        z-index: 100;
-        max-width: 250px;
-        word-wrap: break-word;
-        display: none;
-      }
     </style>
   </head>
   <body>
@@ -295,38 +238,24 @@
     
     <!-- ESP32 Status -->
     <div class="esp-status disconnected" id="esp-status">
-      Dashboard: Disconnected
-    </div>
-
-    <!-- Debug Info -->
-    <div class="debug-info" id="debug-info"></div>
-
-    <!-- Real-time Sensor Display -->
-    <div class="sensor-display" id="sensor-display" style="display: none;">
-      <div><strong>Sensor Data</strong></div>
-      <div class="sensor-value">Flex1: <span id="flex1-val">0°</span></div>
-      <div class="sensor-value">Flex2: <span id="flex2-val">0°</span></div>
-      <div class="sensor-value">Flex3: <span id="flex3-val">0°</span></div>
-      <div class="sensor-value">Tilt: <span id="tilt-val">0°</span></div>
-      <div class="sensor-value">Flex Active: <span id="flex-active">No</span></div>
-      <div class="sensor-value">IMU Active: <span id="imu-active">No</span></div>
+      📡 ESP32: Disconnected
     </div>
     
     <!-- Performance HUD -->
     <div class="performance-hud" id="performance-hud" style="display: none;">
-      <div><strong>Session Progress</strong></div>
+      <div><strong>🎯 Session Progress</strong></div>
       <div class="progress-bar">
         <div class="progress-fill" id="session-progress" style="width: 0%;"></div>
       </div>
-      <div>Shots: <span id="shot-count">0</span></div>
-      <div>Holes: <span id="hole-count">0</span></div>
-      <div>Score: <span id="current-score">0</span></div>
-      <div>Explored: <span id="exploration-distance">0m</span></div>
+      <div>⛳ Shots: <span id="shot-count">0</span></div>
+      <div>🎯 Holes: <span id="hole-count">0</span></div>
+      <div>🏆 Score: <span id="current-score">0</span></div>
+      <div>🌸 Explored: <span id="exploration-distance">0m</span></div>
     </div>
 
     <!-- Enhanced Mode Indicator -->
     <div class="mode-indicator waiting-walk" id="mode-indicator" style="display: none;">
-      <div><strong>WAITING FOR WALKING</strong></div>
+      <div><strong>🚶 WAITING FOR WALKING</strong></div>
       <div style="font-size: 12px; margin-top: 5px;">Start walking to begin the game!</div>
     </div>
 
@@ -339,38 +268,21 @@
     <!-- Game Start/End Overlay -->
     <div id="game-overlay">
       <div class="overlay-content">
-        <h1 id="overlay-title">VR Therapeutic Golf World (5 Minutes)</h1>
+        <h1 id="overlay-title">🏌️ VR Therapeutic Golf World (5 Minutes)</h1>
         <p id="overlay-description">
-          5-minute assessment duration<br>
-          Golf scoring system<br>
-          Interactive coin collection<br>
-          Animal interaction mechanics<br>
-          Game starts when you walk!
+          ⏱️ 5-minute assessment duration<br>
+          🎯 Golf scoring system<br>
+          💰 Interactive coin collection<br>
+          🐾 Animal interaction mechanics<br>
+          🚶 Game starts when you walk!
         </p>
         
         <div id="esp-settings">
-          <h3>Connect to VR Rehab Dashboard</h3>
-          <input type="text" id="esp-ip" placeholder="Dashboard URL (e.g., https://ba7e2c9510e5.ngrok-free.app)" value="https://ba7e2c9510e5.ngrok-free.app">
+          <h3>ESP32 Connection</h3>
+          <input type="text" id="esp-ip" placeholder="ESP32 IP Address (e.g., 172.20.10.6)" value="172.20.10.6">
           <br>
-          <label style="margin: 10px 0; display: block;">
-            <input type="checkbox" id="use-cors-proxy" style="width: auto; margin-right: 10px;">
-            Use CORS Proxy (if dashboard has CORS issues)
-          </label>
-          <br>
-          <button id="connect-esp" class="btn btn-secondary" onclick="connectToDashboard()">Connect to Dashboard</button>
-          <button id="test-endpoint" class="btn btn-secondary" onclick="testEndpoint()">Test Endpoint</button>
-          <button id="toggle-debug" class="btn btn-secondary" onclick="toggleDebug()">Toggle Debug</button>
+          <button id="connect-esp" class="btn btn-secondary" onclick="connectESP32()">📡 Connect to ESP32</button>
           <div id="connection-status" style="margin-top: 10px; color: #FFD700;"></div>
-          
-          <div class="dashboard-instructions">
-            <strong>Dashboard Integration:</strong><br>
-            1. Your VR Rehab Dashboard should be running<br>
-            2. Enter the ngrok HTTPS URL above<br>
-            3. <strong style="color: #F44336;">CORS Error Fix:</strong> Add CORS headers to your dashboard server<br>
-            4. Click "Test Endpoint" first to check connectivity<br>
-            5. If CORS issues persist, enable "Use CORS Proxy" above<br>
-            <strong>Default URL pre-filled for quick connection!</strong>
-          </div>
         </div>
         
         <div id="patient-info" style="margin: 20px 0;">
@@ -379,23 +291,24 @@
           <input type="text" id="patient-id" placeholder="Patient ID" 
                  style="padding: 10px; margin: 5px; border-radius: 5px; border: none; width: 200px;">
         </div>
-        <button id="start-session" class="btn" onclick="startSession()">Start Session (Walk to Begin)</button>
-        <button id="view-demo" class="btn btn-secondary" onclick="startDemo()">View Demo Mode</button>
+        <button id="start-session" class="btn" onclick="startSession()">🎯 Start Session (Walk to Begin)</button>
+        <button id="view-demo" class="btn btn-secondary" onclick="startDemo()">👁️ View Demo Mode</button>
       </div>
     </div>
 
     <!-- Session Timer -->
     <div class="session-timer" id="session-timer" style="display: none;">
-      <span id="time-remaining">5:00</span>
+      ⏱️ <span id="time-remaining">5:00</span>
     </div>
 
     <!-- VR Scene -->
-    <a-scene vr-mode-ui="enabled: true; enterVRButton: #vr-button; enterARButton: #ar-button" 
+    <a-scene vr-mode-ui="enabled: true" 
              background="color: #87CEEB" 
              fog="type: exponential; density: 0.0008; color: #87CEEB"
              renderer="antialias: true; highRefreshRate: true"
              shadow="type: basic"
              id="vr-scene"
+             embedded
              style="height: 100vh; width: 100vw;">
       
       <!-- Sky -->
@@ -436,42 +349,42 @@
                  geometry="primitive: plane"></a-plane>
         
         <a-text position="0 1.5 0.01" 
-                value="CONTROLS (5 MIN)" 
+                value="🎮 CONTROLS (5 MIN)" 
                 color="#FFD700" 
                 scale="0.8 0.8 0.8" 
                 align="center"
                 font="kelsonsans"></a-text>
         
         <a-text position="0 1 0.01" 
-                value="WALK: Elbow bend = smooth movement (starts game)" 
+                value="🚶 WALK: Elbow bend = smooth movement (starts game)" 
                 color="#2196F3" 
                 scale="0.5 0.5 0.5" 
                 align="center"
                 font="kelsonsans"></a-text>
         
         <a-text position="0 0.5 0.01" 
-                value="COLLECT: Must flex finger + be close" 
+                value="💰 COLLECT: Must flex finger + be close" 
                 color="#FFD700" 
                 scale="0.5 0.5 0.5" 
                 align="center"
                 font="kelsonsans"></a-text>
         
         <a-text position="0 0 0.01" 
-                value="GOLF: Look at ball + hold finger flex" 
+                value="🏌️ GOLF: Look at ball + hold finger flex" 
                 color="#4CAF50" 
                 scale="0.5 0.5 0.5" 
                 align="center"
                 font="kelsonsans"></a-text>
         
         <a-text position="0 -0.5 0.01" 
-                value="TOUCH: Must flex finger + be close" 
+                value="🐾 TOUCH: Must flex finger + be close" 
                 color="#E91E63" 
                 scale="0.5 0.5 0.5" 
                 align="center"
                 font="kelsonsans"></a-text>
         
         <a-text position="0 -1 0.01" 
-                value="Real sensors control VR actions!" 
+                value="🔄 Ball returns after shot! Score when in hole!" 
                 color="#FFFFFF" 
                 scale="0.4 0.4 0.4" 
                 align="center"
@@ -786,7 +699,7 @@
       
       <!-- Course Labels -->
       <a-text position="-20 3 -10" 
-              value="EASY GOLF COURSE ⬅️&#10;Perfect for beginners!" 
+              value="🏌️ EASY GOLF COURSE ⬅️&#10;Perfect for beginners!" 
               color="#FFFFFF" 
               scale="0.8 0.8 0.8" 
               align="center"
@@ -794,7 +707,7 @@
               material="color: #4CAF50; opacity: 0.15; transparent: true"></a-text>
       
       <a-text position="20 3 -10" 
-              value="EXTREME CHALLENGE ➡️&#10;Master-level coordination!" 
+              value="⚡ EXTREME CHALLENGE ➡️&#10;Master-level coordination!" 
               color="#FFFFFF" 
               scale="0.8 0.8 0.8" 
               align="center"
@@ -830,16 +743,12 @@
 
     <script>
       // Global variables
-      let dashboardPollingInterval = null;
-      let dashboardBaseURL = null;
+      let esp32WebSocket = null;
       let therapeuticGolf = null;
       let sessionTimer = null;
       let gameState = 'menu';
       let lastSensorData = null;
-      let gameStarted = false;
-      let debugMode = false;
-      let connectionAttempts = 0;
-      let maxConnectionAttempts = 3;
+      let gameStarted = false; // New flag to track if game has started
       
       // OPTIMIZED MOVEMENT SYSTEM
       let movementSystem = {
@@ -865,10 +774,10 @@
       let isInVRMode = false;
       let golfTimeout = null;
       
-      // SENSOR THRESHOLD SYSTEM - ADJUSTED FOR DASHBOARD DATA
+      // SENSOR THRESHOLD SYSTEM
       let sensorThresholds = {
-        flexThreshold: 25,      
-        imuThreshold: 8,        
+        flexThreshold: 35,    
+        imuThreshold: 10,     
         proximityDistance: 3.5,
         flexRequired: false,
         imuRequired: false
@@ -885,276 +794,77 @@
         animalsTouched: 0
       };
 
-      // DEBUG FUNCTIONS
-      function updateDebugInfo(message, type = 'info') {
-        if (!debugMode) return;
-        
-        const debugDiv = document.getElementById('debug-info');
-        const timestamp = new Date().toLocaleTimeString();
-        
-        if (debugDiv) {
-          debugDiv.innerHTML += `<div style="color: ${type === 'error' ? '#FF5555' : type === 'success' ? '#55FF55' : '#00FF00'}">[${timestamp}] ${message}</div>`;
-          debugDiv.scrollTop = debugDiv.scrollHeight;
-          
-          // Keep only last 20 lines
-          const lines = debugDiv.children;
-          while (lines.length > 20) {
-            lines[0].remove();
-          }
-        }
-      }
-
-      function toggleDebug() {
-        debugMode = !debugMode;
-        const debugDiv = document.getElementById('debug-info');
-        if (debugDiv) {
-          debugDiv.style.display = debugMode ? 'block' : 'none';
-        }
-        
-        if (debugMode) {
-          updateDebugInfo('Debug mode enabled');
-        }
-      }
-
-      // TEST ENDPOINT FUNCTION
-      async function testEndpoint() {
-        const ipInput = document.getElementById('esp-ip');
-        const statusDiv = document.getElementById('connection-status');
-        
-        const dashboardUrl = ipInput ? ipInput.value.trim() : '';
-        
-        if (!dashboardUrl) {
-          statusDiv.textContent = 'Please enter dashboard URL';
-          statusDiv.style.color = '#F44336';
-          return;
-        }
-        
-        if (!dashboardUrl.startsWith('https://') && !dashboardUrl.startsWith('http://')) {
-          statusDiv.textContent = 'Please enter valid URL (https:// or http://)';
-          statusDiv.style.color = '#F44336';
-          return;
-        }
-        
-        statusDiv.textContent = `Testing endpoint: ${dashboardUrl}/sensor-data...`;
-        statusDiv.style.color = '#FFD700';
-        
-        updateDebugInfo(`Testing endpoint: ${dashboardUrl}/sensor-data`);
-        
-        try {
-          const testResponse = await fetch(`${dashboardUrl}/sensor-data`, {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-            },
-            mode: 'cors',
-            credentials: 'omit'
-          });
-          
-          updateDebugInfo(`Test response status: ${testResponse.status}`);
-          updateDebugInfo(`Test response headers: ${testResponse.headers.get('content-type')}`);
-          
-          // Get the actual response text to see what's being returned
-          const responseText = await testResponse.text();
-          updateDebugInfo(`Response preview: ${responseText.substring(0, 200)}...`);
-          
-          if (!testResponse.ok) {
-            throw new Error(`HTTP ${testResponse.status}: ${testResponse.statusText}`);
-          }
-          
-          // Check content type
-          const contentType = testResponse.headers.get('content-type');
-          if (!contentType || !contentType.includes('application/json')) {
-            statusDiv.textContent = `❌ Endpoint returns ${contentType || 'unknown'} instead of JSON`;
-            statusDiv.style.color = '#F44336';
-            updateDebugInfo(`Error: Expected JSON, got ${contentType}`, 'error');
-            return;
-          }
-          
-          // Try to parse as JSON
-          try {
-            const jsonData = JSON.parse(responseText);
-            statusDiv.textContent = `✅ Endpoint working! Found: ${Object.keys(jsonData).join(', ')}`;
-            statusDiv.style.color = '#4CAF50';
-            updateDebugInfo(`Success: Valid JSON response`, 'success');
-            updateDebugInfo(`JSON keys: ${Object.keys(jsonData).join(', ')}`, 'success');
-          } catch (parseError) {
-            statusDiv.textContent = `❌ Endpoint returns invalid JSON`;
-            statusDiv.style.color = '#F44336';
-            updateDebugInfo(`Parse error: ${parseError.message}`, 'error');
-          }
-          
-        } catch (error) {
-          statusDiv.textContent = `❌ Connection failed: ${error.message}`;
-          statusDiv.style.color = '#F44336';
-          updateDebugInfo(`Connection error: ${error.message}`, 'error');
-        }
-      }
-
-      // ENHANCED DASHBOARD CONNECTION WITH BETTER ERROR HANDLING
-      function connectToDashboard() {
+      // ESP32 Connection
+      function connectESP32() {
         const ipInput = document.getElementById('esp-ip');
         const statusDiv = document.getElementById('connection-status');
         const espStatus = document.getElementById('esp-status');
         
-        const dashboardUrl = ipInput ? ipInput.value.trim() : '';
+        const ip = ipInput ? ipInput.value.trim() : '172.20.10.6';
         
-        if (!dashboardUrl) {
-          statusDiv.textContent = 'Please enter dashboard URL';
-          statusDiv.style.color = '#F44336';
+        if (!ip) {
+          statusDiv.textContent = '❌ Please enter IP address';
           return;
         }
         
-        if (!dashboardUrl.startsWith('https://') && !dashboardUrl.startsWith('http://')) {
-          statusDiv.textContent = 'Please enter valid URL (https:// or http://)';
-          statusDiv.style.color = '#F44336';
-          return;
-        }
-        
-        dashboardBaseURL = dashboardUrl;
-        connectionAttempts = 0;
-        statusDiv.textContent = `Connecting to ${dashboardUrl}...`;
+        statusDiv.textContent = `Connecting to ${ip}...`;
         statusDiv.style.color = '#FFD700';
         
-        updateDebugInfo(`Starting connection to: ${dashboardUrl}`);
-        
-        // Stop any existing polling
-        if (dashboardPollingInterval) {
-          clearInterval(dashboardPollingInterval);
+        if (esp32WebSocket) {
+          esp32WebSocket.close();
         }
         
-        // Start polling dashboard for sensor data with enhanced error handling
-        dashboardPollingInterval = setInterval(async () => {
+        esp32WebSocket = new WebSocket(`ws://${ip}:81/`);
+        
+        esp32WebSocket.onopen = () => {
+          statusDiv.textContent = '🟢 Connected successfully!';
+          statusDiv.style.color = '#4CAF50';
+          espStatus.textContent = '📡 ESP32: Connected';
+          espStatus.className = 'esp-status';
+        };
+        
+        esp32WebSocket.onmessage = (event) => {
           try {
-            updateDebugInfo(`Polling attempt ${connectionAttempts + 1}`);
-            
-            const response = await fetch(`${dashboardBaseURL}/sensor-data`, {
-              method: 'GET',
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-              },
-              mode: 'cors',
-              credentials: 'omit',
-              cache: 'no-cache' // Prevent caching issues
-            });
-            
-            updateDebugInfo(`Response status: ${response.status}`);
-            const contentType = response.headers.get('content-type');
-            updateDebugInfo(`Content-Type: ${contentType}`);
-            
-            if (!response.ok) {
-              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            // Check if response is actually JSON
-            if (!contentType || !contentType.includes('application/json')) {
-              // Get response text for debugging
-              const responseText = await response.text();
-              updateDebugInfo(`Non-JSON response: ${responseText.substring(0, 100)}...`, 'error');
-              throw new Error(`Expected JSON, got ${contentType}. Response: ${responseText.substring(0, 100)}...`);
-            }
-            
-            const data = await response.json();
-            updateDebugInfo(`Parsed JSON successfully: ${Object.keys(data).join(', ')}`, 'success');
-            
-            // Validate data structure
-            if (!data.flexAngles || typeof data.tilt === 'undefined') {
-              updateDebugInfo(`Invalid data structure: ${JSON.stringify(data)}`, 'error');
-              throw new Error('Invalid sensor data structure - missing flexAngles or tilt');
-            }
-            
-            // First successful connection
-            if (espStatus.className.includes('disconnected') || espStatus.className.includes('error')) {
-              statusDiv.textContent = 'Connected to Dashboard!';
-              statusDiv.style.color = '#4CAF50';
-              espStatus.textContent = 'Dashboard: Connected';
-              espStatus.className = 'esp-status';
-              document.getElementById('sensor-display').style.display = 'block';
-              updateDebugInfo('Dashboard connected successfully', 'success');
-              connectionAttempts = 0; // Reset attempts on success
-            }
-            
+            const data = JSON.parse(event.data);
             lastSensorData = data;
-            updateSensorDisplay(data);
-            processDashboardSensorData(data);
-            
-          } catch (error) {
-            connectionAttempts++;
-            updateDebugInfo(`Connection attempt ${connectionAttempts} failed: ${error.message}`, 'error');
-            
-            // Update status based on error type
-            if (error.message.includes('JSON')) {
-              if (!espStatus.className.includes('error')) {
-                statusDiv.textContent = `❌ Dashboard returning HTML instead of JSON`;
-                statusDiv.style.color = '#FF9800';
-                espStatus.textContent = 'Dashboard: Wrong Response Type';
-                espStatus.className = 'esp-status error';
-              }
-            } else {
-              if (!espStatus.className.includes('disconnected')) {
-                statusDiv.textContent = `❌ Connection failed: ${error.message.substring(0, 50)}`;
-                statusDiv.style.color = '#F44336';
-                espStatus.textContent = 'Dashboard: Connection Error';
-                espStatus.className = 'esp-status disconnected';
-              }
-            }
-            
-            // Hide sensor display on persistent errors
-            if (connectionAttempts >= maxConnectionAttempts) {
-              document.getElementById('sensor-display').style.display = 'none';
-            }
+            processFixedSensorData(data);
+          } catch (e) {
+            // Handle non-JSON data
           }
-        }, 1000); // Poll every 1 second (reduced from 500ms)
+        };
+        
+        esp32WebSocket.onclose = () => {
+          statusDiv.textContent = '🔴 Disconnected';
+          statusDiv.style.color = '#F44336';
+          espStatus.textContent = '📡 ESP32: Disconnected';
+          espStatus.className = 'esp-status disconnected';
+        };
+        
+        esp32WebSocket.onerror = (error) => {
+          statusDiv.textContent = '⚠️ Connection Error';
+          statusDiv.style.color = '#F44336';
+          espStatus.textContent = '📡 ESP32: Error';
+          espStatus.className = 'esp-status disconnected';
+        };
       }
 
-      // UPDATE SENSOR DISPLAY
-      function updateSensorDisplay(data) {
-        if (!data.flexAngles) return;
+      // SENSOR PROCESSING - Game only starts when walking detected
+      function processFixedSensorData(data) {
+        const { flex, tilt, flexSolenoid, imuSolenoid } = data;
+        if (!flex || tilt === undefined) return;
         
-        document.getElementById('flex1-val').textContent = data.flexAngles[0].toFixed(1) + '°';
-        document.getElementById('flex2-val').textContent = data.flexAngles[1].toFixed(1) + '°';
-        document.getElementById('flex3-val').textContent = data.flexAngles[2].toFixed(1) + '°';
-        document.getElementById('tilt-val').textContent = Math.abs(data.tilt || 0).toFixed(1) + '°';
-        
-        // Update active states with colors
-        const flexActiveEl = document.getElementById('flex-active');
-        const imuActiveEl = document.getElementById('imu-active');
-        
-        if (data.flexActive || data.solenoidFlex) {
-          flexActiveEl.textContent = 'YES';
-          flexActiveEl.className = 'sensor-value sensor-active';
-        } else {
-          flexActiveEl.textContent = 'No';
-          flexActiveEl.className = 'sensor-value';
-        }
-        
-        if (data.imuActive || data.solenoidIMU) {
-          imuActiveEl.textContent = 'YES';  
-          imuActiveEl.className = 'sensor-value sensor-active';
-        } else {
-          imuActiveEl.textContent = 'No';
-          imuActiveEl.className = 'sensor-value';
-        }
-      }
-
-      // SENSOR PROCESSING - MODIFIED FOR DASHBOARD DATA
-      function processDashboardSensorData(data) {
-        const { flexAngles, tilt, flexActive, imuActive, solenoidFlex, solenoidIMU } = data;
-        if (!flexAngles || tilt === undefined) return;
-        
-        const avgFlex = (flexAngles[0] + flexAngles[1] + flexAngles[2]) / 3;
+        const avgFlex = (flex[0] + flex[1] + flex[2]) / 3;
         const absTilt = Math.abs(tilt);
         
-        // ENHANCED SENSOR STATES - Use dashboard's processed states OR calculate from raw data
-        const flexActiveState = (flexActive === 1) || (solenoidFlex === 1) || (avgFlex >= sensorThresholds.flexThreshold);
-        const imuActiveState = (imuActive === 1) || (solenoidIMU === 1) || (absTilt >= sensorThresholds.imuThreshold);
+        // FIXED SENSOR STATES
+        const flexActive = (flexSolenoid === true) || (avgFlex >= sensorThresholds.flexThreshold);
+        const imuActive = (imuSolenoid === true) || (absTilt >= sensorThresholds.imuThreshold);
         
-        sensorThresholds.flexRequired = flexActiveState;
-        sensorThresholds.imuRequired = imuActiveState;
+        sensorThresholds.flexRequired = flexActive;
+        sensorThresholds.imuRequired = imuActive;
         
         // Check if we're in waiting mode and detect walking to start game
-        if (gameState === 'waiting' && imuActiveState) {
+        if (gameState === 'waiting' && imuActive) {
           actuallyStartGame();
           return;
         }
@@ -1165,9 +875,9 @@
         const now = Date.now();
         
         // MOVEMENT: Only when IMU is deliberately activated AND not in golf mode
-        if (imuActiveState && golfState === 'none') {
-          const tiltIntensity = Math.min(absTilt / 20, 1.0);
-          const targetSpeed = 0.15 + (tiltIntensity * 0.5);
+        if (imuActive && golfState === 'none') {
+          const tiltIntensity = Math.min(absTilt / 25, 1.0);
+          const targetSpeed = 0.2 + (tiltIntensity * 0.4);
           updateSmoothMovement(targetSpeed);
           performanceMetrics.totalActions++;
         } else {
@@ -1180,7 +890,7 @@
         }
         
         // COLLECTION AND TOUCH: Must flex AND be in proximity
-        if (flexActiveState && golfState === 'none') {
+        if (flexActive && golfState === 'none') {
           let actionTaken = false;
           
           if (handleCoinCollection()) {
@@ -1204,8 +914,8 @@
           lastActionTime = now;
         }
         
-        // GOLF SYSTEM - Enhanced with dashboard data
-        handleGolfSystem(avgFlex, absTilt, flexActiveState, imuActiveState);
+        // GOLF SYSTEM
+        handleGolfSystem(avgFlex, absTilt, flexActive, imuActive);
       }
 
       // SMOOTH MOVEMENT SYSTEM
@@ -1483,7 +1193,6 @@
         if (challengingBall) challengingBall.removeAttribute('animation__glow');
         
         updateModeIndicator();
-        updateDebugInfo(`Golf exit: ${reason}`);
       }
 
       // COIN COLLECTION
@@ -1537,8 +1246,6 @@
       function collectCoin(coin) {
         if (!coin || !coin.parentNode || (gameState !== 'playing' && gameState !== 'demo')) return;
         
-        updateDebugInfo(`Coin collected at ${coin.getAttribute('position').x.toFixed(1)}, ${coin.getAttribute('position').z.toFixed(1)}`, 'success');
-        
         coin.setAttribute('animation__collect', {
           property: 'position',
           to: `${coin.getAttribute('position').x} 3 ${coin.getAttribute('position').z}`,
@@ -1572,8 +1279,6 @@
       function touchAnimal(animal) {
         if (!animal || (gameState !== 'playing' && gameState !== 'demo')) return;
         
-        updateDebugInfo(`Animal touched: ${animal.getAttribute('gltf-model').split('/').pop()}`, 'success');
-        
         animal.setAttribute('animation__touch', {
           property: 'scale',
           to: '1.2 1.2 1.2',
@@ -1597,7 +1302,7 @@
           case 'aiming':
             indicator.className = 'mode-indicator golf-ready';
             indicator.innerHTML = `
-              <div><strong>GOLF AIMING</strong></div>
+              <div><strong>🎯 GOLF AIMING</strong></div>
               <div style="font-size: 12px; margin-top: 5px;">Keep finger flex + add elbow for power</div>
               <div style="font-size: 12px;">Release finger to cancel</div>
             `;
@@ -1606,7 +1311,7 @@
           case 'power':
             indicator.className = 'mode-indicator golf-ready';
             indicator.innerHTML = `
-              <div><strong>GOLF POWER</strong></div>
+              <div><strong>⚡ GOLF POWER</strong></div>
               <div style="font-size: 12px; margin-top: 5px;">Hold both controls for power</div>
               <div style="font-size: 12px;">Release either to swing!</div>
             `;
@@ -1616,15 +1321,15 @@
             if (gameState === 'waiting') {
               indicator.className = 'mode-indicator waiting-walk';
               indicator.innerHTML = `
-                <div><strong>WAITING FOR WALKING</strong></div>
+                <div><strong>🚶 WAITING FOR WALKING</strong></div>
                 <div style="font-size: 12px; margin-top: 5px;">Start walking to begin the game!</div>
               `;
             } else {
               indicator.className = 'mode-indicator walk-mode';
               indicator.innerHTML = `
-                <div><strong>All Interactions Active! (5 Min)</strong></div>
-                <div style="font-size: 12px; margin-top: 5px;">Dashboard sensors controlling VR actions</div>
-                <div style="font-size: 12px;">Real-time flex + IMU data</div>
+                <div><strong>🚶 All Interactions Active! (5 Min)</strong></div>
+                <div style="font-size: 12px; margin-top: 5px;">Elbow = move, flex finger + be close for interaction</div>
+                <div style="font-size: 12px;">Golf scores when ball enters hole</div>
               `;
             }
             break;
@@ -1640,13 +1345,6 @@
           alert('Please enter patient name and ID before starting the session.');
           return;
         }
-        
-        if (!dashboardBaseURL) {
-          alert('Please connect to the dashboard first before starting the session.');
-          return;
-        }
-        
-        updateDebugInfo(`Starting session for ${patientName} (${patientId})`);
         
         initializeTherapeuticGolf(patientName, patientId);
         
@@ -1684,8 +1382,6 @@
         gameStarted = true;
         gameState = 'playing';
         
-        updateDebugInfo('Game started - walking detected!', 'success');
-        
         // Start the timer and show it
         document.getElementById('session-timer').style.display = 'block';
         startSessionTimer();
@@ -1694,8 +1390,6 @@
       }
 
       function startDemo() {
-        updateDebugInfo('Demo mode started');
-        
         // Reset all states
         forceExitGolf('demo start');
         movementSystem.currentSpeed = 0;
@@ -1742,17 +1436,8 @@
         movementSystem.targetSpeed = 0;
         movementSystem.isActive = false;
         
-        updateDebugInfo('New session - resetting all states');
-        
         if (sessionTimer) {
           clearInterval(sessionTimer);
-        }
-        
-        // Stop dashboard polling
-        if (dashboardPollingInterval) {
-          clearInterval(dashboardPollingInterval);
-          dashboardPollingInterval = null;
-          updateDebugInfo('Dashboard polling stopped');
         }
         
         document.getElementById('game-overlay').classList.remove('hidden');
@@ -1764,7 +1449,6 @@
         document.getElementById('session-timer').style.display = 'none';
         document.getElementById('performance-hud').style.display = 'none';
         document.getElementById('mode-indicator').style.display = 'none';
-        document.getElementById('sensor-display').style.display = 'none';
       }
 
       function initializeTherapeuticGolf(patientName, patientId) {
@@ -1818,8 +1502,6 @@
         movementSystem.targetSpeed = 0;
         movementSystem.isActive = false;
         
-        updateDebugInfo('Session completed', 'success');
-        
         if (therapeuticGolf) {
           therapeuticGolf.sessionData.sessionCompleted = true;
         }
@@ -1829,8 +1511,8 @@
         document.getElementById('mode-indicator').style.display = 'none';
         document.getElementById('golf-power-meter').style.display = 'none';
         
-        // Enhanced end message with dashboard integration info
-        alert(`Session Complete!\nTime: 5:00 minutes\nShots: ${performanceMetrics.golfShotsTotal}\nHoles: ${performanceMetrics.golfHolesMade}\nCoins: ${performanceMetrics.coinsCollected}\nAnimals: ${performanceMetrics.animalsTouched}\n\nDashboard Integration: ${dashboardBaseURL ? 'Connected' : 'Not Connected'}`);
+        // Simple end message instead of full report
+        alert(`Session Complete!\nTime: 5:00 minutes\nShots: ${performanceMetrics.golfShotsTotal}\nHoles: ${performanceMetrics.golfHolesMade}\nCoins: ${performanceMetrics.coinsCollected}\nAnimals: ${performanceMetrics.animalsTouched}`);
         
         // Return to menu
         newSession();
@@ -1881,8 +1563,6 @@
           }
         }
         
-        updateDebugInfo(`Spawning coin at ${x.toFixed(1)}, ${z.toFixed(1)}`);
-        
         const coinContainer = document.createElement('a-entity');
         coinContainer.setAttribute('class', 'assessment-coin gazeable');
         coinContainer.setAttribute('position', `${x} 0.8 ${z}`);
@@ -1919,7 +1599,6 @@
 
       function spawnAssessmentCoins() {
         const coinsToSpawn = 8 + Math.floor(Math.random() * 5);
-        updateDebugInfo(`Spawning ${coinsToSpawn} assessment coins`);
         
         for (let i = 0; i < coinsToSpawn; i++) {
           setTimeout(() => {
@@ -2012,8 +1691,6 @@
             placedFlowers.push({ x, z });
           }
         }
-        
-        updateDebugInfo(`Placed ${placedFlowers.length} flowers`);
       }
 
       // Animal AI Component
@@ -2168,13 +1845,11 @@
           scene.addEventListener('enter-vr', () => {
             isInVRMode = true;
             document.body.classList.add('vr-mode');
-            updateDebugInfo('Entered VR mode');
           });
           
           scene.addEventListener('exit-vr', () => {
             isInVRMode = false;
             document.body.classList.remove('vr-mode');
-            updateDebugInfo('Exited VR mode');
           });
         }
       }
@@ -2184,20 +1859,8 @@
         updateModeIndicator();
         detectVRMode();
         
-        updateDebugInfo('VR Therapeutic Golf initialized');
-        
-        // Auto-connect to dashboard if URL is pre-filled
-        const dashboardInput = document.getElementById('esp-ip');
-        if (dashboardInput && dashboardInput.value.trim()) {
-          setTimeout(() => {
-            updateDebugInfo('Auto-connecting to pre-filled dashboard URL');
-            connectToDashboard();
-          }, 1000);
-        }
-        
         // Mobile VR support
         if (/Android|iPhone|iPad/.test(navigator.userAgent)) {
-          updateDebugInfo('Mobile device detected - requesting orientation permission');
           if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
             let permissionRequested = false;
             document.addEventListener('touchstart', function requestPermissionOnce() {
@@ -2205,11 +1868,9 @@
                 permissionRequested = true;
                 DeviceOrientationEvent.requestPermission()
                   .then(response => {
-                    updateDebugInfo(`Device orientation permission: ${response}`, response === 'granted' ? 'success' : 'error');
+                    console.log('Device orientation permission:', response);
                   })
-                  .catch(error => {
-                    updateDebugInfo(`Permission error: ${error.message}`, 'error');
-                  });
+                  .catch(console.error);
                 document.removeEventListener('touchstart', requestPermissionOnce);
               }
             });
@@ -2225,14 +1886,23 @@
           if (existingCoins < 8) {
             const coinsToSpawn = Math.min(2, 12 - existingCoins);
             
-            updateDebugInfo(`Auto-spawning ${coinsToSpawn} coins (${existingCoins} existing)`);
-            
             for (let i = 0; i < coinsToSpawn; i++) {
               setTimeout(() => spawnNewCoin(), i * 800);
             }
           }
         }
       }, 8000);
+
+      // Keep WebSocket connection alive
+      setInterval(() => {
+        if (esp32WebSocket && esp32WebSocket.readyState === WebSocket.OPEN) {
+          try {
+            esp32WebSocket.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+          } catch (error) {
+            console.log('WebSocket ping failed:', error);
+          }
+        }
+      }, 30000);
 
       // Ball reset safeguard
       setInterval(() => {
@@ -2243,7 +1913,6 @@
           if (easyBall) {
             const easyPos = easyBall.getAttribute('position');
             if (easyPos.y > 2 || Math.abs(easyPos.x) > 5 || Math.abs(easyPos.z - 12) > 5) {
-              updateDebugInfo('Easy ball reset triggered');
               guaranteedBallResetToTee(true);
             }
           }
@@ -2251,7 +1920,6 @@
           if (challengingBall) {
             const challengingPos = challengingBall.getAttribute('position');
             if (challengingPos.y > 2 || Math.abs(challengingPos.x) > 5 || Math.abs(challengingPos.z - 15) > 5) {
-              updateDebugInfo('Challenging ball reset triggered');
               guaranteedBallResetToTee(false);
             }
           }
